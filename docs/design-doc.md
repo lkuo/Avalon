@@ -64,75 +64,159 @@
             - providing realtime status and accessible from the Internet
                 - for example the current leader needs to receive notification about nominate X players for Y mission, while all other players know who the current leader is and the game is pending his/her action
             - record and list all leaders, their nominations and players votes
-- Technical design
-    - Actors and actions
-        - Game admin
-            - Creates game
-            - Set game configuration
-                - If the game is with Assassin
-                - If the game is with Oberon
-                - How many rounds of assassination the evil team gets
-                - The role knowledge of each role
-                  > The reason why the word soft in software is that software itself should be easily changed. This of course is the ultimate goal of all the software projects.
-                    I've decided to include this because I noticed different sources give different versions of the role knowledge. Plus, it's always a good habit to make hard-coded assumptions configurable, it only takes a couple lines of code but can make your software much more flexible.
-            - Send out game invitation
-            - Officially start a game
-        - Players
-            - Join the game via invitation
-            - Receive role and role knowledge after game started
-            - Receive the latest event of the game
-                - Current mission number
-                - Current round number
-                - Current leader
-                - Previous missions status
-                    - nominees
-                    - number of passes and fails
-                - Previous round status
-                    - leader
-                    - nominees
-                    - players votes
-                - Pending actions
-                    - Who have voted and who have not in a round
-                    - Waiting for the round leader to choose nominees
-                    - Which nominees have voted for a mission and which have not
-                    - Waiting for the assassin to choose a target
-            - Perform actions
-                - Vote for a team proposal
-                - Vote for a mission
-                - Pick nominees for a mission
-                - Pick a target to assassinate
-    - Considerations
-        - The communication between the player and the system must be realtime and bidirectional
-        - The system must be accessible via the Internet
-        - In case the client side crashes or losing connection, a player must be able to restore all the data any moment, by re-joining the game or click again on the invite
-    - Client side
-        - Possible ways of communication
-            - web page (recommended approach)
-                - pros:
-                    - cross-platform and device
-                    - more control over how and what to present the data
-                - cons
-                    - need to consider browser crash and refresh
-                    - less smooth interaction comparing to native app
-            - email
-                - pros
-                    - easy to implement
-                - cons
-                    - delay can be high
-                    - no guarantee of delivery
-                    - hard to present all the data of a long game in a single email
-            - text message
-                - same pros and cons plus
-                - cons
-                    - regulation restrictions, might need verification adding too much complexity to the players
-            - app
-                - pros
-                    - better UX
-                    - more stable
-                - cons
-                    - hard to develop and deploy
-            - IMs app i.e. whatsapp or telegram
-                - pros:
-                    - free to interact with, unlike text messages
-                - cons:
-                    - text based interaction is restrictive
+    - Technical design
+        - Actors and actions
+            - Game admin
+                - Creates game
+                - Set game configuration
+                    - If the game is with Assassin
+                    - If the game is with Oberon
+                    - How many rounds of assassination the evil team gets
+                    - The role knowledge of each role
+                  >     The reason why the word soft in software is that software itself should be easily changed. This of course is the ultimate goal of all the software projects.
+                        I've decided to include this because I noticed different sources give different versions of the role knowledge. Plus, it's always a good habit to make hard-coded assumptions configurable, it only takes a couple lines of code but can make your software much more flexible.
+                - Send out game invitation
+                - Officially start a game
+            - Players
+                - Join the game via invitation
+                - Receive role and role knowledge after game started
+                - Receive the latest event of the game
+                    - Current mission number
+                    - Current round number
+                    - Current leader
+                    - Previous missions status
+                        - nominees
+                        - number of passes and fails
+                    - Previous round status
+                        - leader
+                        - nominees
+                        - players votes
+                    - Pending actions
+                        - Who have voted and who have not in a round
+                        - Waiting for the round leader to choose nominees
+                        - Which nominees have voted for a mission and which have not
+                        - Waiting for the assassin to choose a target
+                - Perform actions
+                    - Vote for a team proposal
+                    - Vote for a mission
+                    - Pick nominees for a mission
+                    - Pick a target to assassinate
+        - Considerations
+            - The communication between the player and the system must be realtime and bidirectional
+            - The system must be accessible via the Internet
+            - In case the client side crashes or losing connection, a player must be able to restore all the data any moment, by re-joining the game or click again on the invite
+        - Client side
+            - Possible ways of communication
+                - web page (recommended approach)
+                    - pros:
+                        - cross-platform and device
+                        - more control over how and what to present the data
+                    - cons
+                        - need to consider browser crash and refresh
+                        - less smooth interaction comparing to native app
+                - email
+                    - pros
+                        - easy to implement
+                    - cons
+                        - delay can be high
+                        - no guarantee of delivery
+                        - hard to present all the data of a long game in a single email
+                - text message
+                    - same pros and cons plus
+                    - cons
+                        - regulation restrictions, might need verification adding too much complexity to the players
+                - app
+                    - pros
+                        - better UX
+                        - more stable
+                    - cons
+                        - hard to develop and deploy
+                - IMs app i.e. whatsapp or telegram
+                    - pros:
+                        - free to interact with, unlike text messages
+                    - cons:
+                        - text based interaction is restrictive
+            - Wireframe
+                - ![Wireframe](./images/wireframe.png)
+
+        - Backend
+            - According to the front-end design, the backend should support the following functionalities
+                - admin creates game
+                - admin starts game
+                - player joins game
+                - broadcast game started
+                - broadcast mission started
+                - broadcast round started
+                - notify each player their role and known players
+                - notify current leader to submit a team proposal
+                - broadcast pending current leader to submit a proposal
+                - team leader submit proposal
+                - broadcast the submitted proposal
+                - broadcast vote for the proposal
+                - players vote for proposal
+                - broadcast any player has voted
+                - broadcast round result
+                - notify team member to vote for a mission
+                - broadcast pending team members to vote for the mission
+                - players vote for mission
+                - broadcast any team member has voted
+                - broadcast mission result
+                - notify assassin to pick a target
+                - broadcast pending assassin picking a target
+                - assassin picks a target
+                - broadcast assassin picked target
+                - broadcast assassination result
+                - broadcast game result
+            - ![state machine](./images/statemachine.png)
+            - Mermaid source code
+                ```
+                stateDiagram-v2
+                    [*] --> GameSetup
+                    GameSetup --> InfoReveal
+                    InfoReveal --> TeamLeaderAssignment
+                    TeamLeaderAssignment --> TeamSelection
+                    TeamSelection --> Voting
+                    Voting --> QuestPhase
+                    Voting --> TeamLeaderAssignment: Team Rejected (Next Leader)
+                    QuestPhase --> TeamLeaderAssignment: Quest Completed (Next Leader)
+                    QuestPhase --> GameEnd: Quests completed
+                    GameEnd --> [*]
+                ```
+            - Backend architecture
+                - websocket (proposed solution)
+                    - pros
+                        - real-time communication
+                        - bidirectional communication
+                    - cons:
+                        - might lose connection
+                        - more complicated to implement
+                - REST-ful
+                    - pros:
+                        - simple
+                        - stateless
+                        - wide adoption
+                    - cons:
+                        - does not support bidirectional communication natively, require polling or other alternatives
+                - GraphQL
+                    - pros:
+                        - flexible queries
+                        - single endpoint
+                    - cons:
+                        - overly complicated for the use case
+                - gRPC
+                    - pros
+                        - high performance
+                        - bidirectional communication
+                    - cons
+                        - limited support in browsers
+                        - overly complicated for the use case
+                - SOAP
+                    - pros:
+                        - strict standard
+                        - built-in error handling
+                    - cons:
+                        - more complicated than REST
+                        - xml format requires more overhead of data transfer
+                        - less flexible
+                - JSON-RPC and XML-RPC
+                    - not suitable for server to client communication

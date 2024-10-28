@@ -1,3 +1,3 @@
 # Avalon
 
-- Design doc: docs/design-doc.md
+- [Design doc](docs/design-doc.md)
