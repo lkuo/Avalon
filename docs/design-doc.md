@@ -3,7 +3,9 @@
         - References
         - https://www.ultraboardgames.com/avalon/game-rules.php
         - {{video(https://youtu.be/b5iJjQJkWEQ?t=266)}}
-        - Avalon is a werewolf alike board game. It consists 5 - 10 people, divided into 2 teams - good and evil, based on the role they are assigned to. The good guys goal is to successfully finish 3 out of 5 missions, while the bad guys' goal is to sabotage that.
+        - Avalon is a werewolf alike board game. It consists 5 - 10 people, divided into 2 teams - good and evil, based
+          on the role they are assigned to. The good guys goal is to successfully finish 3 out of 5 missions, while the
+          bad guys' goal is to sabotage that.
     - Gameplay
         - Setup Phase
             - Each player is assigned a role
@@ -34,18 +36,21 @@
                     - Mordred
                     - Morgana
         - Mission Phase
-            - The game consists of 5 missions, the goal is to pass or fail these missions. A designated leader (rotating each round) propose a team contains required number of players to go on the mission. The number of players required depends on the round and total number of players.
-            - 
-              | Number of Players | 5 | 6 | 7 | 8 | 9 | 10 |
-              |-------------------|---|---|---|---|---|----|
-              | Mission 1         | 2 | 2 | 2 | 3 | 3 | 3  |
-              | Mission 2         | 3 | 3 | 3 | 4 | 4 | 4  |
-              | Mission 3         | 2 | 4 | 3 | 4 | 4 | 4  |
-              | Mission 4         | 3 | 3 | 4 | 5 | 5 | 5  |
-              | Mission 5         | 3 | 4 | 4 | 5 | 5 | 5  |
+            - The game consists of 5 missions, the goal is to pass or fail these missions. A designated leader (rotating
+              each round) propose a team contains required number of players to go on the mission. The number of players
+              required depends on the round and total number of players.
+            -
+          | Number of Players | 5 | 6 | 7 | 8 | 9 | 10 |
+                                                                                                                                        |-------------------|---|---|---|---|---|----|
+          | Mission 1         | 2 | 2 | 2 | 3 | 3 | 3  |
+          | Mission 2         | 3 | 3 | 3 | 4 | 4 | 4  |
+          | Mission 3         | 2 | 4 | 3 | 4 | 4 | 4  |
+          | Mission 4         | 3 | 3 | 4 | 5 | 5 | 5  |
+          | Mission 5         | 3 | 4 | 4 | 5 | 5 | 5  |
             - All players vote (publicly) to approve or reject the proposed team.
                 - If the majority of players vote for the proposed team, the game proceeds on game execution
-                - If the proposed team does not get a majority vote, then the leader role rotates, the new leader propose a new team
+                - If the proposed team does not get a majority vote, then the leader role rotates, the new leader
+                  propose a new team
                 - If the proposals get rejected 5 times in a row, the evil team wins the mission
             - Mission Execution
                 - Selected team members secretly submit either a Success or Fail card.
@@ -54,7 +59,8 @@
         - Victory Conditions
             - Good wins: Complete 3 successful missions.
             - Evil wins: Complete 3 failed missions or successfully identify Merlin if the good side wins the missions.
-            - Merlin Assassination: If Good achieves 3 missions, Evil gets one last chance to win by guessing who is Merlin.
+            - Merlin Assassination: If Good achieves 3 missions, Evil gets one last chance to win by guessing who is
+              Merlin.
     - Problem statement
         - Must be physically together to play the game
         - People get distracted during the game, i.e. don't know who the nominees are or who is the leader of the round
@@ -62,7 +68,8 @@
         - We need something to help us
             - tracking the game status, receive input from players then broadcast to all players
             - providing realtime status and accessible from the Internet
-                - for example the current leader needs to receive notification about nominate X players for Y mission, while all other players know who the current leader is and the game is pending his/her action
+                - for example the current leader needs to receive notification about nominate X players for Y mission,
+                  while all other players know who the current leader is and the game is pending his/her action
             - record and list all leaders, their nominations and players votes
     - Technical design
         - Actors and actions
@@ -104,7 +111,8 @@
         - Considerations
             - The communication between the player and the system must be realtime and bidirectional
             - The system must be accessible via the Internet
-            - In case the client side crashes or losing connection, a player must be able to restore all the data any moment, by re-joining the game or click again on the invite
+            - In case the client side crashes or losing connection, a player must be able to restore all the data any
+              moment, by re-joining the game or click again on the invite
         - Client side
             - Possible ways of communication
                 - web page (recommended approach)
@@ -220,3 +228,147 @@
                         - less flexible
                 - JSON-RPC and XML-RPC
                     - not suitable for server to client communication
+            - Cloud service
+                - Lambda (recommended)
+                    - pros:
+                        - pay-per invocation
+                            - auto scale
+                            - fully managed
+                        - cons:
+                            - short-lived
+                            - no OS access
+                            - 15 minutes limit
+                - EC2
+                    - pros:
+                        - full control over instance
+                        - long-running
+                    - cons:
+                        - having to manage OS
+            - DB:
+                - DynamoDB (recommended)
+                    - key-value
+                    - pros:
+                        - pay per request
+                - Others
+                    - RDS, Aurora, DocumentDB and etc
+                        - relational and no-SQL
+                    - cons:
+                        - pay per hour
+                -
+            - Summary
+                - application will be a cloud hosted, event driven application
+                - backend will be a serverless application, using Lambda, DynamoDB and API gateway
+                - REST-ful endpoint
+                
+                  | Http Method | Path                   | Description   |
+                  |-------------|------------------------|---------------|
+                  | POST        | admin/game/            | Create a game |
+                  | POST        | admin/game/{game_id}   | Start a game  |
+                  | PUT         | admin/game/{game_id}   | Update a game |
+                  | POST        | /game/{game_id}/player | Join a game   |
+                  |             |                        |
+                  - Websocket events
+                
+                    | **Event Name**                    | **Description**                                          |
+                    |-----------------------------------|----------------------------------------------------------|
+                    | player:join_game                  | A player joins the game.                                 |
+                    | broadcast:game_started            | Notify all players that the game has started.            |
+                    | broadcast:mission_started         | Notify all players that a mission has started.           |
+                    | broadcast:round_started           | Notify all players that a new round has started.         |
+                    | notify:player_role                | Notify each player of their role and known players.      |
+                    | notify:leader_team_proposal       | Notify the current leader to submit a team proposal.     |
+                    | broadcast:pending_team_proposal   | Broadcast that the leader needs to submit a proposal.    |
+                    | leader:submit_proposal            | Leader submits the team proposal.                        |
+                    | broadcast:submitted_proposal      | Broadcast the submitted team proposal.                   |
+                    | broadcast:proposal_vote           | Notify players to vote on the proposal.                  |
+                    | player:vote_proposal              | A player votes on the proposal.                          |
+                    | broadcast:player_voted            | Broadcast when any player has voted.                     |
+                    | broadcast:round_result            | Broadcast the result of the round.                       |
+                    | notify:team_vote_mission          | Notify selected team members to vote on the mission.     |
+                    | broadcast:pending_mission_vote    | Broadcast that team members need to vote on the mission. |
+                    | player:vote_mission               | A team member votes on the mission.                      |
+                    | broadcast:team_member_voted       | Broadcast when any team member has voted.                |
+                    | broadcast:mission_result          | Broadcast the mission result.                            |
+                    | notify:assassin_pick_target       | Notify the assassin to pick a target.                    |
+                    | broadcast:pending_assassin_target | Broadcast that the assassin is selecting a target.       |
+                    | assassin:pick_target              | Assassin picks a target.                                 |
+                    | broadcast:assassin_picked         | Broadcast that the assassin has chosen a target.         |
+                    | broadcast:assassination_result    | Broadcast the result of the assassination.               |
+                    | broadcast:game_result             | Broadcast the final result of the game.                  |
+                    |                                   |                                                          |
+                - Data models
+                    - Game
+                    
+                          ```
+                          {
+                              "game_id": {uuid},
+                              "sk_id": {game},
+                              "status": str /* not_started, started, ended */
+                              "result": bool
+                          }
+                          ```
+                    - Player
+                    
+                        ```
+                        {
+                            "game_id": {uuid},
+                            "sk_id": player_{player_id},
+                            "name": {name},
+                            "secret": {uuid} /* to have some level of security */
+                            "role": str,
+                            "known_players": [{player_id}, ...]
+                        }
+                        ```
+                    - Mission
+                    
+                        ```
+                        {
+                            "game_id": {uuid},
+                            "sk_id": mission_{mission_number},
+                            "mission_number": 1,
+                            "votes": {{player_id}: bool}
+                        }
+                        ```
+                    - Mission vote
+                    
+                        ```
+                        {
+                            "game_id": {uuid},
+                            "sk_id": mv_mission_{mission_number},
+                            "mission_number": 1,
+                            "player_id": {player_id},
+                            "vote": bool
+                        }
+                        ```
+                    - Round
+                    
+                        ```
+                        {
+                            "game_id": {uuid},
+                            "sk_id": round_{mission_number}_{round_number},
+                            "mission_number": 1,
+                            "round_number": 2,
+                            "leader": {player_id},
+                            "proposal": [{player_id}, ...],
+                        }
+                        ```
+                    - Round vote
+                    
+                        ```
+                        {
+                            "game_id": {uuid},
+                            "sk_id": rv_{mission_number}_{round_number},
+                            "player_id": {player_id},
+                            "vote": bool
+                        }
+                        ```
+                    - Assassination vote
+                
+                        ```
+                        {
+                            "game_id": {uuid},
+                            "sk_id": "assassination_{attempt}",
+                            "target_id": {player_id}
+                        }
+                        ```
+                -
