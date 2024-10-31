@@ -1,0 +1,25 @@
+from game_core.entities.event import Event
+from game_core.event_type import EventType
+from game_core.services.player_service import PlayerService
+from game_core.states.state import State, StateName
+
+
+class GameSetupState(State):
+    """
+    Handles GameStartEvent. Transitions to TeamLeaderAssignment state upon receiving GameStartEvent.
+    On exit initialize players.
+    """
+    def __init__(self, next_state: State, player_service: PlayerService):
+        super().__init__(StateName.GAME_SETUP, next_state)
+        self._player_service = player_service
+
+    def handle(self, event: Event):
+        if event.type != EventType.GAME_START_EVENT:
+            raise ValueError(f"GameSetupState expects only GAME_START_EVENT, got {event.type.value}")
+
+        # TODO: rename the `initialize` method
+        self._player_service.initialize(event.game_id)
+
+        return self._next_state
+
+
