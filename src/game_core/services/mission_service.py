@@ -1,0 +1,3 @@
+class MissionService:
+    def start_mission(self, game_id: str) -> None:
+        ...

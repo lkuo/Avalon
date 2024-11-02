@@ -1,0 +1,3 @@
+class RoundService:
+    def start_round(self, game_id: str) -> None:
+        ...

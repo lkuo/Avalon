@@ -7,6 +7,7 @@ from game_core.entities.event import Event
 
 class StateName(Enum):
     GAME_SETUP = "GAME_SETUP"
+    LEADER_ASSIGNMENT = "LEADER_ASSIGNMENT"
 
 
 class State(ABC):
@@ -15,6 +16,10 @@ class State(ABC):
         self._name = name
         self._next_state = next_state
 
+    @property
+    def name(self) -> StateName:
+        return self._name
+
     @abstractmethod
-    def handle(self, event: Event):
+    def handle(self, event: Event) -> Self:
         pass

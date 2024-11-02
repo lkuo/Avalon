@@ -13,8 +13,8 @@ class GameSetupState(State):
         super().__init__(StateName.GAME_SETUP, next_state)
         self._player_service = player_service
 
-    def handle(self, event: Event):
-        if event.type != EventType.GAME_START_EVENT:
+    def handle(self, event: Event) -> State:
+        if event.type != EventType.GAME_STARTED:
             raise ValueError(f"GameSetupState expects only GAME_START_EVENT, got {event.type.value}")
 
         # TODO: rename the `initialize` method
