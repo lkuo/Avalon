@@ -6,6 +6,12 @@ from game_core.states.state import State, StateName
 
 
 class LeaderAssignmentState(State):
+    """
+    Handles GAME_STARTED, QUESTION_COMPLETED, TEAM_REJECTED events.
+    Transitions from GameSetup, RoundVoting and QuestVoting states.
+    Transitions to RoundVoting state.
+    On exit, start a mission if needed, then start a round.
+    """
     EXPECTED_EVENT_TYPES = [EventType.GAME_STARTED, EventType.QUEST_COMPLETED, EventType.TEAM_REJECTED]
 
     def __init__(self, next_state: State, mission_service: MissionService, round_service: RoundService):
