@@ -14,8 +14,9 @@ class LeaderAssignmentState(State):
     """
     EXPECTED_EVENT_TYPES = [EventType.GAME_STARTED, EventType.QUEST_COMPLETED, EventType.TEAM_REJECTED]
 
-    def __init__(self, next_state: State, mission_service: MissionService, round_service: RoundService):
-        super().__init__(StateName.LEADER_ASSIGNMENT, next_state)
+    def __init__(self, team_selection_state: State, mission_service: MissionService, round_service: RoundService):
+        super().__init__(StateName.LEADER_ASSIGNMENT)
+        self._team_selection_state = team_selection_state
         self._mission_service = mission_service
         self._round_service = round_service
 
@@ -27,4 +28,4 @@ class LeaderAssignmentState(State):
             self._mission_service.start_mission(event.game_id)
         self._round_service.start_round(event.game_id)
 
-        return self._next_state
+        return self._team_selection_state

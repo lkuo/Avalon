@@ -12,8 +12,9 @@ class TeamSelectionState(State):
     On enter, notify the team leader to submit a team proposal
     """
 
-    def __init__(self, next_state: State, round_service: RoundService):
-        super().__init__(StateName.TEAM_SELECTION, next_state)
+    def __init__(self, round_voting: State, round_service: RoundService):
+        super().__init__(StateName.TEAM_SELECTION)
+        self._round_voting = round_voting
         self._round_service = round_service
 
     def handle(self, event: Event) -> State:
@@ -22,7 +23,7 @@ class TeamSelectionState(State):
 
         self._round_service.broadcast_team_proposal(event.game_id)
 
-        return self._next_state
+        return self._round_voting
 
     def on_enter(self, game_id: str) -> None:
         # notify the team leader to submit a team proposal

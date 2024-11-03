@@ -9,13 +9,14 @@ class StateName(Enum):
     GAME_SETUP = "GAME_SETUP"
     LEADER_ASSIGNMENT = "LEADER_ASSIGNMENT"
     TEAM_SELECTION = "TEAM_SELECTION"
+    ROUND_VOTING = "ROUND_VOTING"
+    MISSION_VOTING = "MISSION_VOTING"
 
 
 class State(ABC):
 
-    def __init__(self, name: StateName, next_state: Self):
+    def __init__(self, name: StateName):
         self._name = name
-        self._next_state = next_state
 
     @property
     def name(self) -> StateName:

@@ -9,9 +9,11 @@ class GameSetupState(State):
     Handles GameStartEvent. Transitions to TeamLeaderAssignment state upon receiving GameStartEvent.
     On exit initialize players.
     """
-    def __init__(self, next_state: State, player_service: PlayerService):
-        super().__init__(StateName.GAME_SETUP, next_state)
+
+    def __init__(self, leader_assignment_state: State, player_service: PlayerService):
+        super().__init__(StateName.GAME_SETUP)
         self._player_service = player_service
+        self._leader_assignment_state = leader_assignment_state
 
     def handle(self, event: Event) -> State:
         if event.type != EventType.GAME_STARTED:
@@ -20,6 +22,4 @@ class GameSetupState(State):
         # TODO: rename the `initialize` method
         self._player_service.initialize(event.game_id)
 
-        return self._next_state
-
-
+        return self._leader_assignment_state
