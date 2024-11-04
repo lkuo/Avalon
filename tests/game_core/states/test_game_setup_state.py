@@ -33,7 +33,7 @@ def test_game_setup_state(state, player_service):
 
 def test_game_setup_state_invalid_event(state, player_service):
     # Given
-    invalid_event = Event(game_id="game_id", sk_id="", type=EventType.MISSION_STARTED, recipient=[], payload={})
+    invalid_event = Event(game_id="game_id", sk_id="", type=EventType.QUEST_STARTED, recipient=[], payload={})
     game_setup_state = GameSetupState(state, player_service)
 
     # When

@@ -33,7 +33,7 @@ def test_team_selection_state(state, round_service):
 def test_team_selection_state_with_invalid_event(state, round_service):
     # Given
     team_selection_state = TeamSelectionState(state, round_service)
-    invalid_event = Event(game_id="game_id", sk_id="sk_id", type=EventType.MISSION_STARTED, recipient=[], payload={})
+    invalid_event = Event(game_id="game_id", sk_id="sk_id", type=EventType.QUEST_STARTED, recipient=[], payload={})
 
     # When
     with pytest.raises(ValueError):

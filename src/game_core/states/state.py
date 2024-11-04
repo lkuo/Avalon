@@ -10,7 +10,8 @@ class StateName(Enum):
     LEADER_ASSIGNMENT = "LEADER_ASSIGNMENT"
     TEAM_SELECTION = "TEAM_SELECTION"
     ROUND_VOTING = "ROUND_VOTING"
-    MISSION_VOTING = "MISSION_VOTING"
+    QUEST_VOTING = "QUEST_VOTING"
+    GAME_END = "GAME_END"
 
 
 class State(ABC):
@@ -29,5 +30,5 @@ class State(ABC):
     def on_enter(self, game_id: str) -> None:
         pass
 
-    def on_exit(self):
+    def on_exit(self, game_id: str) -> None:
         pass

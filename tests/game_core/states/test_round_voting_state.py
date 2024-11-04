@@ -4,7 +4,7 @@ from game_core.entities.event import Event
 from game_core.event_type import EventType
 from game_core.services.round_service import RoundService
 from game_core.states.leader_assignment_state import LeaderAssignmentState
-from game_core.states.mission_voting_state import MissionVotingState
+from game_core.states.quest_voting_state import QuestVotingState
 from game_core.states.round_voting_state import RoundVotingState
 from game_core.states.state import StateName
 
@@ -16,7 +16,7 @@ def leader_assignment_state(mocker):
 
 @pytest.fixture
 def mission_voting_state(mocker):
-    return mocker.MagicMock(spec=MissionVotingState)
+    return mocker.MagicMock(spec=QuestVotingState)
 
 
 @pytest.fixture
@@ -94,7 +94,7 @@ def test_round_voting_state_when_proposal_rejected(leader_assignment_state, miss
 def test_round_voting_state_with_invalid_event_type(leader_assignment_state, mission_voting_state, round_service):
     # Given
     round_voting_state = RoundVotingState(leader_assignment_state, mission_voting_state, round_service)
-    invalid_event = Event(game_id="game_id", sk_id="sk_id", type=EventType.MISSION_STARTED, recipient=[], payload={})
+    invalid_event = Event(game_id="game_id", sk_id="sk_id", type=EventType.QUEST_STARTED, recipient=[], payload={})
 
     # When
     with pytest.raises(ValueError):
@@ -114,7 +114,7 @@ def test_round_voting_state_with_invalid_event_payload(leader_assignment_state, 
     round_voting_state = RoundVotingState(leader_assignment_state, mission_voting_state, round_service)
     payload = event.payload
     payload.update({payload_key: None})
-    invalid_event = Event(game_id="game_id", sk_id="sk_id", type=EventType.MISSION_STARTED, recipient=[],
+    invalid_event = Event(game_id="game_id", sk_id="sk_id", type=EventType.QUEST_STARTED, recipient=[],
                           payload=payload)
 
     # When

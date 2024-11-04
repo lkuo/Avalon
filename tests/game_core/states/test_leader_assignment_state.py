@@ -57,7 +57,7 @@ def test_leader_assignment_state_without_start_mission(state, mission_service, r
 def test_leader_assignment_state_invalid_event(state, mission_service, round_service):
     # Given
     leader_assignment_state = LeaderAssignmentState(state, mission_service, round_service)
-    invalid_event = Event(game_id="game_id", sk_id="sk_id", type=EventType.MISSION_STARTED, recipient=[], payload={})
+    invalid_event = Event(game_id="game_id", sk_id="sk_id", type=EventType.QUEST_STARTED, recipient=[], payload={})
 
     # When
     with pytest.raises(ValueError):
