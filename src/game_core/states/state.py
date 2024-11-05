@@ -1,6 +1,6 @@
 from abc import abstractmethod, ABC
 from enum import Enum
-from typing import Self
+from typing import Self, Optional
 
 from game_core.entities.event import Event
 
@@ -11,7 +11,7 @@ class StateName(Enum):
     TEAM_SELECTION = "TEAM_SELECTION"
     ROUND_VOTING = "ROUND_VOTING"
     QUEST_VOTING = "QUEST_VOTING"
-    GAME_END = "GAME_END"
+    END_GAME = "END_GAME"
 
 
 class State(ABC):
@@ -24,7 +24,7 @@ class State(ABC):
         return self._name
 
     @abstractmethod
-    def handle(self, event: Event) -> Self:
+    def handle(self, event: Event) -> Optional[Self]:
         pass
 
     def on_enter(self, game_id: str) -> None:

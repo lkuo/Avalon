@@ -3,7 +3,7 @@ import pytest
 from game_core.entities.event import Event
 from game_core.event_type import EventType
 from game_core.services.mission_service import MissionService
-from game_core.states.game_end_state import GameEndState
+from game_core.states.end_game_state import EndGameState
 from game_core.states.leader_assignment_state import LeaderAssignmentState
 from game_core.states.quest_voting_state import QuestVotingState
 from game_core.states.state import StateName
@@ -16,7 +16,7 @@ def leader_assignment_state(mocker):
 
 @pytest.fixture
 def game_end_state(mocker):
-    return mocker.MagicMock(spec=GameEndState)
+    return mocker.MagicMock(spec=EndGameState)
 
 
 @pytest.fixture
