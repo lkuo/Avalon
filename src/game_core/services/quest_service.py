@@ -34,3 +34,6 @@ class QuestService:
         :return:
         """
         pass
+
+    def handle_on_enter_team_selection_state(self, game_id: str) -> None:
+        pass

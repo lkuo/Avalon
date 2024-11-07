@@ -7,7 +7,6 @@ from game_core.entities.event import Event
 
 class StateName(Enum):
     GAME_SETUP = "GAME_SETUP"
-    LEADER_ASSIGNMENT = "LEADER_ASSIGNMENT"
     TEAM_SELECTION = "TEAM_SELECTION"
     ROUND_VOTING = "ROUND_VOTING"
     QUEST_VOTING = "QUEST_VOTING"

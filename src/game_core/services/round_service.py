@@ -5,10 +5,7 @@ class RoundService:
     def start_round(self, game_id: str) -> None:
         ...
 
-    def notify_submit_team_proposal(self, game_id: str) -> None:
-        pass
-
-    def handle_team_proposal_submitted(self, game_id: str) -> None:
+    def handle_team_proposal_submitted(self, event: Event) -> None:
         pass
 
     def on_enter_round_voting_state(self, game_id) -> None:

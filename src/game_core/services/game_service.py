@@ -22,7 +22,7 @@ class GameService:
         :param game:
         :return:
         """
-        game = self._game_repository.find_game_by_id(game.game_id)
+        # game = self._game_repository.find_game_by_id(game.game_id)
 
     def on_exit_end_game_state(self, game_id):
         pass
@@ -37,4 +37,7 @@ class GameService:
         pass
 
     def handle_assassination_target_submitted(self, event: Event):
+        pass
+
+    def handle_game_started(self, event):
         pass

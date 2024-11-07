@@ -13,14 +13,19 @@ def state(mocker):
 
 
 @pytest.fixture
+def game_service(mocker):
+    return mocker.MagicMock()
+
+
+@pytest.fixture
 def player_service(mocker):
     return mocker.MagicMock(spec=PlayerService)
 
 
-def test_game_setup_state(state, player_service):
+def test_game_setup_state_with_game_started_event(state, game_service, player_service):
     # Given
     event = Event(game_id="game_id", sk_id="", type=EventType.GAME_STARTED, recipient=[], payload={})
-    game_setup_state = GameSetupState(state, player_service)
+    game_setup_state = GameSetupState(state, game_service, player_service)
 
     # When
     next_state = game_setup_state.handle(event)
@@ -28,13 +33,29 @@ def test_game_setup_state(state, player_service):
     # Then
     assert game_setup_state.name == StateName.GAME_SETUP
     assert next_state == state
-    player_service.initialize.assert_called_once_with(event.game_id)
+    player_service.handle_player_joined.assert_not_called()
+    game_service.handle_game_started.assert_called_once_with(event)
 
 
-def test_game_setup_state_invalid_event(state, player_service):
+def test_game_setup_state_with_player_joined_event(state, game_service, player_service):
+    # Given
+    event = Event(game_id="game_id", sk_id="", type=EventType.PLAYER_JOINED, recipient=[], payload={})
+    game_setup_state = GameSetupState(state, game_service, player_service)
+
+    # When
+    next_state = game_setup_state.handle(event)
+
+    # Then
+    assert game_setup_state.name == StateName.GAME_SETUP
+    assert next_state == game_setup_state
+    player_service.handle_player_joined.assert_called_once_with(event)
+    game_service.handle_game_started.assert_not_called()
+
+
+def test_game_setup_state_invalid_event(state, game_service, player_service):
     # Given
     invalid_event = Event(game_id="game_id", sk_id="", type=EventType.QUEST_STARTED, recipient=[], payload={})
-    game_setup_state = GameSetupState(state, player_service)
+    game_setup_state = GameSetupState(state, game_service, player_service)
 
     # When
     with pytest.raises(ValueError):

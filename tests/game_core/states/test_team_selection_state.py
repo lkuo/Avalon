@@ -2,6 +2,7 @@ import pytest
 
 from game_core.entities.event import Event
 from game_core.event_type import EventType
+from game_core.services.quest_service import QuestService
 from game_core.services.round_service import RoundService
 from game_core.states.state import StateName
 from game_core.states.team_selection_state import TeamSelectionState
@@ -13,13 +14,18 @@ def state(mocker):
 
 
 @pytest.fixture
+def quest_service(mocker):
+    return mocker.MagicMock(spec=QuestService)
+
+
+@pytest.fixture
 def round_service(mocker):
     return mocker.MagicMock(spec=RoundService)
 
 
-def test_team_selection_state(state, round_service):
+def test_team_selection_state(state, quest_service, round_service):
     # Given
-    team_selection_state = TeamSelectionState(state, round_service)
+    team_selection_state = TeamSelectionState(state, quest_service, round_service)
     event = Event(game_id="game_id", sk_id="sk_id", type=EventType.TEAM_PROPOSAL_SUBMITTED, recipient=[], payload={})
 
     # When
@@ -28,11 +34,12 @@ def test_team_selection_state(state, round_service):
     # Then
     assert team_selection_state.name == StateName.TEAM_SELECTION
     assert next_state == state
+    round_service.handle_team_proposal_submitted.assert_called_once_with(event)
 
 
-def test_team_selection_state_with_invalid_event(state, round_service):
+def test_team_selection_state_with_invalid_event(state, quest_service, round_service):
     # Given
-    team_selection_state = TeamSelectionState(state, round_service)
+    team_selection_state = TeamSelectionState(state, quest_service, round_service)
     invalid_event = Event(game_id="game_id", sk_id="sk_id", type=EventType.QUEST_STARTED, recipient=[], payload={})
 
     # When
@@ -43,13 +50,13 @@ def test_team_selection_state_with_invalid_event(state, round_service):
     round_service.handle_team_proposal_submitted.assert_not_called()
 
 
-def test_team_selection_state_on_enter(state, round_service):
+def test_team_selection_state_on_enter(state, quest_service, round_service):
     # Given
-    team_selection_state = TeamSelectionState(state, round_service)
+    team_selection_state = TeamSelectionState(state, quest_service, round_service)
     game_id = "game_id"
 
     # When
     team_selection_state.on_enter(game_id)
 
     # Then
-    round_service.notify_submit_team_proposal.assert_called_once_with(game_id)
+    quest_service.handle_on_enter_team_selection_state.assert_called_once_with(game_id)

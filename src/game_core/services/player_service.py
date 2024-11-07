@@ -7,3 +7,6 @@ class PlayerService:
 
     def initialize(self, game_id: str) -> None:
         ...
+
+    def handle_player_joined(self, event):
+        pass

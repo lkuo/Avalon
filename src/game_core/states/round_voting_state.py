@@ -12,9 +12,9 @@ class RoundVotingState(State):
 
     """
 
-    def __init__(self, leader_assignment_state: State, quest_voting_state: State, round_service: RoundService):
+    def __init__(self, team_selection_state: State, quest_voting_state: State, round_service: RoundService):
         super().__init__(StateName.ROUND_VOTING)
-        self._leader_assignment_state = leader_assignment_state
+        self._team_selection_state = team_selection_state
         self._quest_voting_state = quest_voting_state
         self._round_service = round_service
 
@@ -30,7 +30,7 @@ class RoundVotingState(State):
         elif self._round_service.is_proposal_passed(game_id):
             return self._quest_voting_state
         else:
-            return self._leader_assignment_state
+            return self._team_selection_state
 
     def on_enter(self, game_id: str) -> None:
         self._round_service.on_enter_round_voting_state(game_id)
