@@ -6,12 +6,9 @@ from game_core.states.state import State, StateName
 
 class EndGameState(State):
     """
-    This is the end state
-    Transitions from QuestVotingState
-    Handles ASSASSINATION_TARGET_SUBMITTED event
-    Broadcast assassination started, pending for the assassin to pick a target
-    Broadcast the assassin picked target
-    If the assassination attempts exhausted, broadcast everyone's role and the game result
+    Transitions from QuestVotingState.
+    Broadcast assassination started, wait until the assassin picks a target.
+    Calculate and broadcast the game results.
     """
 
     def __init__(self, game_service: GameService):

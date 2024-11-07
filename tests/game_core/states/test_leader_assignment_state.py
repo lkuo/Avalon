@@ -2,7 +2,7 @@ import pytest
 
 from game_core.entities.event import Event
 from game_core.event_type import EventType
-from game_core.services.mission_service import MissionService
+from game_core.services.mission_service import QuestService
 from game_core.services.round_service import RoundService
 from game_core.states.leader_assignment_state import LeaderAssignmentState
 from game_core.states.state import StateName
@@ -15,7 +15,7 @@ def state(mocker):
 
 @pytest.fixture
 def mission_service(mocker):
-    return mocker.MagicMock(spec=MissionService)
+    return mocker.MagicMock(spec=QuestService)
 
 
 @pytest.fixture

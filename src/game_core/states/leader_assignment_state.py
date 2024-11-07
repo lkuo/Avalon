@@ -1,6 +1,6 @@
 from game_core.entities.event import Event
 from game_core.event_type import EventType
-from game_core.services.mission_service import MissionService
+from game_core.services.mission_service import QuestService
 from game_core.services.round_service import RoundService
 from game_core.states.state import State, StateName
 
@@ -14,7 +14,7 @@ class LeaderAssignmentState(State):
     """
     EXPECTED_EVENT_TYPES = [EventType.GAME_STARTED, EventType.QUEST_COMPLETED, EventType.TEAM_REJECTED]
 
-    def __init__(self, team_selection_state: State, mission_service: MissionService, round_service: RoundService):
+    def __init__(self, team_selection_state: State, mission_service: QuestService, round_service: RoundService):
         super().__init__(StateName.LEADER_ASSIGNMENT)
         self._team_selection_state = team_selection_state
         self._mission_service = mission_service

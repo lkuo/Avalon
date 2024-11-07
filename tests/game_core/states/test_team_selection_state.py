@@ -40,7 +40,7 @@ def test_team_selection_state_with_invalid_event(state, round_service):
         team_selection_state.handle(invalid_event)
 
     # Then
-    round_service.broadcast_team_proposal.assert_not_called()
+    round_service.handle_team_proposal_submitted.assert_not_called()
 
 
 def test_team_selection_state_on_enter(state, round_service):

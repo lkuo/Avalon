@@ -1,26 +1,33 @@
-class MissionService:
+from game_core.entities.event import Event
+
+
+class QuestService:
     def start_mission(self, game_id: str) -> None:
         ...
 
-    def broadcast_quest_vote_started(self, game_id) -> None:
+    def on_enter_quest_voting_state(self, game_id) -> None:
+        """
+        On enter broadcast quest voting started by team members, and notify team members to cast vote
+        On event saves vote and broadcast player X has voted
+        On exit broadcast the quest voting result and updates mission
+        :param game_id:
+        :return:
+        """
         pass
 
-    def notify_cast_quest_vote(self, game_id) -> None:
+    def on_exit_quest_voting_state(self, game_id) -> None:
         pass
 
-    def broadcast_quest_vote_result(self, game_id) -> None:
+    def handle_quest_vote_cast(self, event: Event) -> None:
         pass
 
-    def save_mission_vote(self, game_id, mission_number, player_id, vote) -> None:
-        pass
-
-    def is_mission_voted(self, game_id):
+    def is_quest_vote_completed(self, game_id):
         pass
 
     def is_mission_passed(self, game_id):
         pass
 
-    def is_missions_completed(self, game_id) -> bool:
+    def has_won_majority(self, game_id) -> bool:
         """
         If any team has won 3 out of 5 missions
         :param game_id:

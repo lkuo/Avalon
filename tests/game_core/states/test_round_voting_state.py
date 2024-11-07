@@ -15,7 +15,7 @@ def leader_assignment_state(mocker):
 
 
 @pytest.fixture
-def mission_voting_state(mocker):
+def quest_voting_state(mocker):
     return mocker.MagicMock(spec=QuestVotingState)
 
 
@@ -26,19 +26,13 @@ def round_service(mocker):
 
 @pytest.fixture
 def event():
-    payload = {
-        "mission_number": 1,
-        "round_number": 2,
-        "player_id": "player_id",
-        "vote": True
-    }
-    return Event(game_id="game_id", sk_id="sk_id", type=EventType.ROUND_VOTE_CASTED, recipient=[], payload=payload)
+    return Event(game_id="game_id", sk_id="sk_id", type=EventType.ROUND_VOTE_CAST, recipient=[], payload={})
 
 
-def test_round_voting_state_when_round_not_voted(leader_assignment_state, mission_voting_state, round_service, event):
+def test_round_voting_state_when_round_not_voted(leader_assignment_state, quest_voting_state, round_service, event):
     # Given
-    round_voting_state = RoundVotingState(leader_assignment_state, mission_voting_state, round_service)
-    round_service.is_round_voted.return_value = False
+    round_voting_state = RoundVotingState(leader_assignment_state, quest_voting_state, round_service)
+    round_service.is_round_vote_completed.return_value = False
 
     # When
     next_state = round_voting_state.handle(event)
@@ -46,17 +40,15 @@ def test_round_voting_state_when_round_not_voted(leader_assignment_state, missio
     # Then
     assert round_voting_state.name == StateName.ROUND_VOTING
     assert next_state == round_voting_state
-    round_service.handle_vote.assert_called_once_with(event.game_id, event.payload["mission_number"],
-                                                      event.payload["round_number"], event.payload["player_id"],
-                                                      event.payload["vote"])
-    round_service.is_round_voted.assert_called_once_with(event.game_id)
+    round_service.handle_round_vote_cast.assert_called_once_with(event)
+    round_service.is_round_vote_completed.assert_called_once_with(event.game_id)
     round_service.is_proposal_passed.assert_not_called()
 
 
-def test_round_voting_state_when_proposal_passed(leader_assignment_state, mission_voting_state, round_service, event):
+def test_round_voting_state_when_proposal_passed(leader_assignment_state, quest_voting_state, round_service, event):
     # Given
-    round_voting_state = RoundVotingState(leader_assignment_state, mission_voting_state, round_service)
-    round_service.is_round_voted.return_value = True
+    round_voting_state = RoundVotingState(leader_assignment_state, quest_voting_state, round_service)
+    round_service.is_round_vote_completed.return_value = True
     round_service.is_proposal_passed.return_value = True
 
     # When
@@ -64,18 +56,16 @@ def test_round_voting_state_when_proposal_passed(leader_assignment_state, missio
 
     # Then
     assert round_voting_state.name == StateName.ROUND_VOTING
-    assert next_state == mission_voting_state
-    round_service.handle_vote.assert_called_once_with(event.game_id, event.payload["mission_number"],
-                                                      event.payload["round_number"], event.payload["player_id"],
-                                                      event.payload["vote"])
-    round_service.is_round_voted.assert_called_once_with(event.game_id)
+    assert next_state == quest_voting_state
+    round_service.handle_round_vote_cast.assert_called_once_with(event)
+    round_service.is_round_vote_completed.assert_called_once_with(event.game_id)
     round_service.is_proposal_passed.assert_called_once_with(event.game_id)
 
 
-def test_round_voting_state_when_proposal_rejected(leader_assignment_state, mission_voting_state, round_service, event):
+def test_round_voting_state_when_proposal_rejected(leader_assignment_state, quest_voting_state, round_service, event):
     # Given
-    round_voting_state = RoundVotingState(leader_assignment_state, mission_voting_state, round_service)
-    round_service.is_round_voted.return_value = True
+    round_voting_state = RoundVotingState(leader_assignment_state, quest_voting_state, round_service)
+    round_service.is_round_vote_completed.return_value = True
     round_service.is_proposal_passed.return_value = False
 
     # When
@@ -84,16 +74,14 @@ def test_round_voting_state_when_proposal_rejected(leader_assignment_state, miss
     # Then
     assert round_voting_state.name == StateName.ROUND_VOTING
     assert next_state == leader_assignment_state
-    round_service.handle_vote.assert_called_once_with(event.game_id, event.payload["mission_number"],
-                                                      event.payload["round_number"], event.payload["player_id"],
-                                                      event.payload["vote"])
-    round_service.is_round_voted.assert_called_once_with(event.game_id)
+    round_service.handle_round_vote_cast.assert_called_once_with(event)
+    round_service.is_round_vote_completed.assert_called_once_with(event.game_id)
     round_service.is_proposal_passed.assert_called_once_with(event.game_id)
 
 
-def test_round_voting_state_with_invalid_event_type(leader_assignment_state, mission_voting_state, round_service):
+def test_round_voting_state_with_invalid_event_type(leader_assignment_state, quest_voting_state, round_service):
     # Given
-    round_voting_state = RoundVotingState(leader_assignment_state, mission_voting_state, round_service)
+    round_voting_state = RoundVotingState(leader_assignment_state, quest_voting_state, round_service)
     invalid_event = Event(game_id="game_id", sk_id="sk_id", type=EventType.QUEST_STARTED, recipient=[], payload={})
 
     # When
@@ -102,27 +90,30 @@ def test_round_voting_state_with_invalid_event_type(leader_assignment_state, mis
 
     # Then
     assert round_voting_state.name == StateName.ROUND_VOTING
-    round_service.handle_vote.assert_not_called()
-    round_service.is_round_voted.assert_not_called()
+    round_service.handle_round_vote_cast.assert_not_called()
+    round_service.is_round_vote_completed.assert_not_called()
     round_service.is_proposal_passed.assert_not_called()
 
 
-@pytest.mark.parametrize("payload_key", ["mission_number", "round_number", "player_id", "vote"])
-def test_round_voting_state_with_invalid_event_payload(leader_assignment_state, mission_voting_state, round_service,
-                                                       event, payload_key):
+def test_round_voting_state_on_enter(leader_assignment_state, quest_voting_state, round_service):
     # Given
-    round_voting_state = RoundVotingState(leader_assignment_state, mission_voting_state, round_service)
-    payload = event.payload
-    payload.update({payload_key: None})
-    invalid_event = Event(game_id="game_id", sk_id="sk_id", type=EventType.QUEST_STARTED, recipient=[],
-                          payload=payload)
+    state = RoundVotingState(leader_assignment_state, quest_voting_state, round_service)
+    game_id = "game_id"
 
     # When
-    with pytest.raises(ValueError):
-        round_voting_state.handle(invalid_event)
+    state.on_enter(game_id)
 
     # Then
-    assert round_voting_state.name == StateName.ROUND_VOTING
-    round_service.handle_vote.assert_not_called()
-    round_service.is_round_voted.assert_not_called()
-    round_service.is_proposal_passed.assert_not_called()
+    round_service.on_enter_round_voting_state.assert_called_once_with(game_id)
+
+
+def test_round_voting_state_on_exit(leader_assignment_state, quest_voting_state, round_service):
+    # Given
+    state = RoundVotingState(leader_assignment_state, quest_voting_state, round_service)
+    game_id = "game_id"
+
+    # When
+    state.on_exit(game_id)
+
+    # Then
+    round_service.on_exit_round_voting_state.assert_called_once_with(game_id)

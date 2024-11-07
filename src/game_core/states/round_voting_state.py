@@ -6,41 +6,34 @@ from game_core.states.state import State, StateName
 
 class RoundVotingState(State):
     """
-    Broadcast the team proposal then collect all votes.
     Transitions from LeaderAssignmentState
+    Broadcast the team proposal and wait for all votes are cast.
     Transitions to LeaderAssignmentState or MissionVoting state, depends on the vote results
-    On enter, request for votes
-    On event, broadcast player has voted then save the vote
-    On exit, broadcast the results - players and their votes
+
     """
 
-    def __init__(self, leader_assignment_state: State, mission_voting_state: State, round_service: RoundService):
+    def __init__(self, leader_assignment_state: State, quest_voting_state: State, round_service: RoundService):
         super().__init__(StateName.ROUND_VOTING)
         self._leader_assignment_state = leader_assignment_state
-        self._mission_voting_state = mission_voting_state
+        self._quest_voting_state = quest_voting_state
         self._round_service = round_service
 
     def handle(self, event: Event) -> State:
-        if event.type != EventType.ROUND_VOTE_CASTED:
-            raise ValueError(f"RoundVotingState expects only ROUND_VOTE_CASTED, got {event.type.value}")
+        if event.type != EventType.ROUND_VOTE_CAST:
+            raise ValueError(f"RoundVotingState expects only {EventType.ROUND_VOTE_CAST.value}, got {event.type.value}")
 
-        payload = event.payload
-        if payload is None or not payload.get("mission_number") or not payload.get("round_number") or not payload.get(
-                "player_id") or payload.get("vote") is None:
-            raise ValueError(
-                f"Invalid event, expects payload to have mission_number, round_number, player_id and vote keys, got {payload}")
-        payload = event.payload
-        mission_number = payload["mission_number"]
-        round_number = payload["round_number"]
-        player_id = payload["player_id"]
-        vote = payload["vote"]
+        self._round_service.handle_round_vote_cast(event)
 
-        self._round_service.handle_vote(event.game_id, mission_number, round_number, player_id, vote)
-        if not self._round_service.is_round_voted(event.game_id):
+        game_id = event.game_id
+        if not self._round_service.is_round_vote_completed(game_id):
             return self
-
-        proposal_passed = self._round_service.is_proposal_passed(event.game_id)
-        return self._mission_voting_state if proposal_passed else self._leader_assignment_state
+        elif self._round_service.is_proposal_passed(game_id):
+            return self._quest_voting_state
+        else:
+            return self._leader_assignment_state
 
     def on_enter(self, game_id: str) -> None:
-        self._round_service.broadcast_round_vote_request(game_id)
+        self._round_service.on_enter_round_voting_state(game_id)
+
+    def on_exit(self, game_id: str) -> None:
+        self._round_service.on_exit_round_voting_state(game_id)
