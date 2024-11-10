@@ -7,8 +7,8 @@ from game_core.constants.event_type import EventType
 
 @dataclass
 class Event:
-    id: str
+    game_id: str
     type: EventType
-    recipient: list[str]
+    recipient: list[str]  # empty list indicates a public event visible to everyone
     payload: dict[str, Any]
-    timestamp: int = datetime.now()
+    timestamp: int = int(datetime.now().timestamp())

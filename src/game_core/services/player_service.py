@@ -1,3 +1,5 @@
+import uuid
+
 from game_core.entities.event import Event
 from game_core.entities.player import Player
 from game_core.repository import Repository
@@ -15,26 +17,26 @@ class PlayerService:
         :param event: PlayerJoined event
         :return:
         """
-        self._validate_player_joined_event(event)
+        player = self._save_player(event)
+        player_joined_event = self._save_player_joined_event(player, event)
+        self._comm_service.broadcast(player_joined_event)
 
-        player = self._build_player(event)
-        self._repository.put_player(player)
+    def _save_player(self, event: Event) -> Player:
+        payload = getattr(event, 'payload') or {}
+        name = payload.get('player_name', '')
+        if not name:
+            raise ValueError(f"Player name is not found in event payload {payload}")
+        game_id = event.game_id
+        secret = str(uuid.uuid4())
+        return self._repository.put_player(game_id, name, secret)
 
-        player_joined_event = self._build_player_joined_event(player)
-        self._repository.put_event(player_joined_event)
-        self._comm_service.broadcast_event(player_joined_event)
-
-    def _validate_player_joined_event(self, event: Event):
-        """
-        The payload of the event must contain:
-
-        :param event:
-        :return:
-        """
-        pass
-
-    def _build_player(self, event) -> Player:
-        pass
-
-    def _build_player_joined_event(self, player) -> Event:
-        pass
+    def _save_player_joined_event(self, player: Player, event: Event) -> Event:
+        game_id = event.game_id
+        event_type = event.type.value
+        recipients = []
+        payload = {
+            "player_id": player.id,
+            'player_name': player.name,
+        }
+        timestamp = event.timestamp
+        return self._repository.put_event(game_id, event_type, recipients, payload, timestamp)

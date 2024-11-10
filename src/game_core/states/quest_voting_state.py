@@ -24,9 +24,9 @@ class QuestVotingState(State):
             raise ValueError(f"QuestVotingState expects only {EventType.QUEST_VOTE_CAST.value}, got {event.type.value}")
 
         self._quest_service.handle_quest_vote_cast(event)
-        if not self._quest_service.is_quest_vote_completed(event.id):
+        if not self._quest_service.is_quest_vote_completed(event.game_id):
             return self
-        elif self._quest_service.has_won_majority(event.id):
+        elif self._quest_service.has_won_majority(event.game_id):
             return self._end_game_state
         else:
             return self._team_selection_state

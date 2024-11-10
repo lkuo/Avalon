@@ -26,7 +26,7 @@ def round_service(mocker):
 
 @pytest.fixture
 def event():
-    return Event(id="game_id", type=EventType.ROUND_VOTE_CAST, recipient=[], payload={})
+    return Event(game_id="game_id", type=EventType.ROUND_VOTE_CAST, recipient=[], payload={})
 
 
 def test_round_voting_state_when_round_not_voted(team_selection_state, quest_voting_state, round_service, event):
@@ -41,7 +41,7 @@ def test_round_voting_state_when_round_not_voted(team_selection_state, quest_vot
     assert round_voting_state.name == StateName.ROUND_VOTING
     assert next_state == round_voting_state
     round_service.handle_round_vote_cast.assert_called_once_with(event)
-    round_service.is_round_vote_completed.assert_called_once_with(event.id)
+    round_service.is_round_vote_completed.assert_called_once_with(event.game_id)
     round_service.is_proposal_passed.assert_not_called()
 
 
@@ -58,8 +58,8 @@ def test_round_voting_state_when_proposal_passed(team_selection_state, quest_vot
     assert round_voting_state.name == StateName.ROUND_VOTING
     assert next_state == quest_voting_state
     round_service.handle_round_vote_cast.assert_called_once_with(event)
-    round_service.is_round_vote_completed.assert_called_once_with(event.id)
-    round_service.is_proposal_passed.assert_called_once_with(event.id)
+    round_service.is_round_vote_completed.assert_called_once_with(event.game_id)
+    round_service.is_proposal_passed.assert_called_once_with(event.game_id)
 
 
 def test_round_voting_state_when_proposal_rejected(team_selection_state, quest_voting_state, round_service, event):
@@ -75,14 +75,14 @@ def test_round_voting_state_when_proposal_rejected(team_selection_state, quest_v
     assert round_voting_state.name == StateName.ROUND_VOTING
     assert next_state == team_selection_state
     round_service.handle_round_vote_cast.assert_called_once_with(event)
-    round_service.is_round_vote_completed.assert_called_once_with(event.id)
-    round_service.is_proposal_passed.assert_called_once_with(event.id)
+    round_service.is_round_vote_completed.assert_called_once_with(event.game_id)
+    round_service.is_proposal_passed.assert_called_once_with(event.game_id)
 
 
 def test_round_voting_state_with_invalid_event_type(team_selection_state, quest_voting_state, round_service):
     # Given
     round_voting_state = RoundVotingState(team_selection_state, quest_voting_state, round_service)
-    invalid_event = Event(id="game_id", type=EventType.QUEST_STARTED, recipient=[], payload={})
+    invalid_event = Event(game_id="game_id", type=EventType.QUEST_STARTED, recipient=[], payload={})
 
     # When
     with pytest.raises(ValueError):

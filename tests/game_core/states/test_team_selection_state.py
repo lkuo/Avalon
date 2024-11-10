@@ -26,7 +26,7 @@ def round_service(mocker):
 def test_team_selection_state(state, quest_service, round_service):
     # Given
     team_selection_state = TeamSelectionState(state, quest_service, round_service)
-    event = Event(id="game_id", type=EventType.TEAM_PROPOSAL_SUBMITTED, recipient=[], payload={})
+    event = Event(game_id="game_id", type=EventType.TEAM_PROPOSAL_SUBMITTED, recipient=[], payload={})
 
     # When
     next_state = team_selection_state.handle(event)
@@ -40,7 +40,7 @@ def test_team_selection_state(state, quest_service, round_service):
 def test_team_selection_state_with_invalid_event(state, quest_service, round_service):
     # Given
     team_selection_state = TeamSelectionState(state, quest_service, round_service)
-    invalid_event = Event(id="game_id", type=EventType.QUEST_STARTED, recipient=[], payload={})
+    invalid_event = Event(game_id="game_id", type=EventType.QUEST_STARTED, recipient=[], payload={})
 
     # When
     with pytest.raises(ValueError):

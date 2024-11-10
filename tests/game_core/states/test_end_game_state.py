@@ -15,7 +15,7 @@ def game_service(mocker):
 def test_end_game_state_with_assassination_attempts_left(game_service):
     # Given
     state = EndGameState(game_service)
-    event = Event(id="game_id", type=EventType.ASSASSINATION_TARGET_SUBMITTED, recipient=[],
+    event = Event(game_id="game_id", type=EventType.ASSASSINATION_TARGET_SUBMITTED, recipient=[],
                   payload={})
     game_service.get_assassination_attempts.return_value = 1
 
@@ -26,13 +26,13 @@ def test_end_game_state_with_assassination_attempts_left(game_service):
     assert state.name == StateName.END_GAME
     assert next_state == state
     game_service.handle_assassination_target_submitted.assert_called_once_with(event)
-    game_service.get_assassination_attempts.assert_called_once_with(event.id)
+    game_service.get_assassination_attempts.assert_called_once_with(event.game_id)
 
 
 def test_end_game_state_without_assassination_attempts_left(game_service):
     # Given
     state = EndGameState(game_service)
-    event = Event(id="game_id", type=EventType.ASSASSINATION_TARGET_SUBMITTED, recipient=[],
+    event = Event(game_id="game_id", type=EventType.ASSASSINATION_TARGET_SUBMITTED, recipient=[],
                   payload={})
     game_service.get_assassination_attempts.return_value = 0
 
@@ -42,13 +42,13 @@ def test_end_game_state_without_assassination_attempts_left(game_service):
     # Then
     assert next_state is None
     game_service.handle_assassination_target_submitted.assert_called_once_with(event)
-    game_service.get_assassination_attempts.assert_called_once_with(event.id)
+    game_service.get_assassination_attempts.assert_called_once_with(event.game_id)
 
 
 def test_end_game_state_with_invalid_event(game_service):
     # Given
     state = EndGameState(game_service)
-    invalid_event = Event(id="game_id", type=EventType.QUEST_STARTED, recipient=[], payload={})
+    invalid_event = Event(game_id="game_id", type=EventType.QUEST_STARTED, recipient=[], payload={})
 
     # When
     with pytest.raises(ValueError):

@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Optional
 
 from game_core.constants.role import Role
 
@@ -7,4 +8,6 @@ from game_core.constants.role import Role
 class Player:
     id: str
     name: str
-    role: Role
+    secret: str
+    role: Optional[Role] = None
+    known_players: list[str] = None

@@ -25,7 +25,7 @@ class RoundVotingState(State):
 
         self._round_service.handle_round_vote_cast(event)
 
-        game_id = event.id
+        game_id = event.game_id
         if not self._round_service.is_round_vote_completed(game_id):
             return self
         elif self._round_service.is_proposal_passed(game_id):
