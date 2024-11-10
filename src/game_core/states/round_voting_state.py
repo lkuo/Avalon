@@ -1,7 +1,8 @@
 from game_core.entities.event import Event
-from game_core.event_type import EventType
+from game_core.constants.event_type import EventType
 from game_core.services.round_service import RoundService
-from game_core.states.state import State, StateName
+from game_core.states.state import State
+from game_core.constants.state_name import StateName
 
 
 class RoundVotingState(State):
@@ -24,7 +25,7 @@ class RoundVotingState(State):
 
         self._round_service.handle_round_vote_cast(event)
 
-        game_id = event.game_id
+        game_id = event.id
         if not self._round_service.is_round_vote_completed(game_id):
             return self
         elif self._round_service.is_proposal_passed(game_id):

@@ -1,7 +1,8 @@
 from game_core.entities.event import Event
-from game_core.event_type import EventType
+from game_core.constants.event_type import EventType
 from game_core.services.quest_service import QuestService
-from game_core.states.state import State, StateName
+from game_core.states.state import State
+from game_core.constants.state_name import StateName
 
 
 class QuestVotingState(State):
@@ -23,9 +24,9 @@ class QuestVotingState(State):
             raise ValueError(f"QuestVotingState expects only {EventType.QUEST_VOTE_CAST.value}, got {event.type.value}")
 
         self._quest_service.handle_quest_vote_cast(event)
-        if not self._quest_service.is_quest_vote_completed(event.game_id):
+        if not self._quest_service.is_quest_vote_completed(event.id):
             return self
-        elif self._quest_service.has_won_majority(event.game_id):
+        elif self._quest_service.has_won_majority(event.id):
             return self._end_game_state
         else:
             return self._team_selection_state

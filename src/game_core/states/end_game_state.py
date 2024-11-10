@@ -1,7 +1,8 @@
 from game_core.entities.event import Event
-from game_core.event_type import EventType
+from game_core.constants.event_type import EventType
 from game_core.services.game_service import GameService
-from game_core.states.state import State, StateName
+from game_core.states.state import State
+from game_core.constants.state_name import StateName
 
 
 class EndGameState(State):
@@ -21,7 +22,7 @@ class EndGameState(State):
 
         self._game_service.handle_assassination_target_submitted(event)
 
-        assassination_attempts = self._game_service.get_assassination_attempts(event.game_id)
+        assassination_attempts = self._game_service.get_assassination_attempts(event.id)
         return self if assassination_attempts > 0 else None
 
     def on_enter(self, game_id: str) -> None:

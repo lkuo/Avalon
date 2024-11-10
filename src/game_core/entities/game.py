@@ -3,7 +3,6 @@ from dataclasses import dataclass
 
 @dataclass
 class Game:
-    game_id: str
-    sk_id: str
+    id: str
     status: str
     result: str

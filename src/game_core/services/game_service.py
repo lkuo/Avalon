@@ -1,10 +1,10 @@
 from game_core.entities.event import Event
 from game_core.entities.game import Game
-from game_core.repositories.game_repository import GameRepository
+from game_core.repository import Repository
 
 
 class GameService:
-    def __init__(self, game_repository: GameRepository):
+    def __init__(self, game_repository: Repository):
         self._game_repository = game_repository
 
     def get_game(self, game_id: str) -> Game:

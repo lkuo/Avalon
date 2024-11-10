@@ -1,16 +1,8 @@
 from abc import abstractmethod, ABC
-from enum import Enum
 from typing import Self, Optional
 
+from game_core.constants.state_name import StateName
 from game_core.entities.event import Event
-
-
-class StateName(Enum):
-    GAME_SETUP = "GAME_SETUP"
-    TEAM_SELECTION = "TEAM_SELECTION"
-    ROUND_VOTING = "ROUND_VOTING"
-    QUEST_VOTING = "QUEST_VOTING"
-    END_GAME = "END_GAME"
 
 
 class State(ABC):

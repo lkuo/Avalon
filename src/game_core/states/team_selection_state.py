@@ -1,8 +1,9 @@
 from game_core.entities.event import Event
-from game_core.event_type import EventType
+from game_core.constants.event_type import EventType
 from game_core.services.quest_service import QuestService
 from game_core.services.round_service import RoundService
-from game_core.states.state import State, StateName
+from game_core.states.state import State
+from game_core.constants.state_name import StateName
 
 
 class TeamSelectionState(State):

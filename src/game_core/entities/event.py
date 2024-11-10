@@ -1,13 +1,14 @@
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 
-from game_core.event_type import EventType
+from game_core.constants.event_type import EventType
 
 
 @dataclass
 class Event:
-    game_id: str
-    sk_id: str
+    id: str
     type: EventType
     recipient: list[str]
     payload: dict[str, Any]
+    timestamp: int = datetime.now()
