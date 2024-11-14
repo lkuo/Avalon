@@ -1,6 +1,10 @@
+import random
 import uuid
+from collections import defaultdict
 
+from game_core.constants.role import Role
 from game_core.entities.event import Event
+from game_core.entities.game import GameConfig
 from game_core.entities.player import Player
 from game_core.repository import Repository
 from game_core.services.comm_service import CommService
@@ -40,3 +44,24 @@ class PlayerService:
         }
         timestamp = event.timestamp
         return self._repository.put_event(game_id, event_type, recipients, payload, timestamp)
+
+    def assign_roles(self, game_id: str, roles: dict[str, list[str]]) -> list[Player]:
+        roles = {Role(k): [Role(v) for v in vals] for k, vals in roles.items()}
+        roles[Role.Villager] = []
+
+        players = self._repository.get_players(game_id)
+        random.shuffle(players)
+        role_keys = list(roles.keys())
+        for i in range(len(players)):
+            player = players[i]
+            player.role = role_keys[i] if i < len(role_keys) else Role.Villager
+
+        role_player_ids = defaultdict(list)
+        for player in players:
+            role_player_ids[player.role].append(player.id)
+
+        for player in players:
+            for known_role in roles[player.role]:
+                player.known_player_ids.extend(role_player_ids[known_role])
+
+        return self._repository.put_players(game_id, players)

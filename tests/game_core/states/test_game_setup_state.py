@@ -24,7 +24,7 @@ def player_service(mocker):
 
 def test_game_setup_state_with_game_started_event(state, game_service, player_service):
     # Given
-    event = Event(game_id="game_id", type=EventType.GAME_STARTED, recipient=[], payload={})
+    event = Event(game_id="game_id", type=EventType.GAME_STARTED, recipients=[], payload={})
     game_setup_state = GameSetupState(state, game_service, player_service)
 
     # When
@@ -39,7 +39,7 @@ def test_game_setup_state_with_game_started_event(state, game_service, player_se
 
 def test_game_setup_state_with_player_joined_event(state, game_service, player_service):
     # Given
-    event = Event(game_id="game_id", type=EventType.PLAYER_JOINED, recipient=[], payload={})
+    event = Event(game_id="game_id", type=EventType.PLAYER_JOINED, recipients=[], payload={})
     game_setup_state = GameSetupState(state, game_service, player_service)
 
     # When
@@ -54,7 +54,7 @@ def test_game_setup_state_with_player_joined_event(state, game_service, player_s
 
 def test_game_setup_state_invalid_event(state, game_service, player_service):
     # Given
-    invalid_event = Event(game_id="game_id", type=EventType.QUEST_STARTED, recipient=[], payload={})
+    invalid_event = Event(game_id="game_id", type=EventType.QUEST_STARTED, recipients=[], payload={})
     game_setup_state = GameSetupState(state, game_service, player_service)
 
     # When

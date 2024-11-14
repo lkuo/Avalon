@@ -26,7 +26,7 @@ def quest_service(mocker):
 
 @pytest.fixture
 def event():
-    return Event(game_id="game_id", type=EventType.QUEST_VOTE_CAST, recipient=[], payload={})
+    return Event(game_id="game_id", type=EventType.QUEST_VOTE_CAST, recipients=[], payload={})
 
 
 def test_quest_voting_state_when_mission_not_voted(team_selection_state, end_game_state, quest_service, event):
@@ -79,7 +79,7 @@ def test_quest_voting_state_when_missions_not_completed(team_selection_state, en
 def test_quest_voting_state_with_invalid_event_type(team_selection_state, end_game_state, quest_service):
     # Given
     state = QuestVotingState(team_selection_state, end_game_state, quest_service)
-    invalid_event = Event(game_id="game_id", type=EventType.QUEST_STARTED, recipient=[], payload={})
+    invalid_event = Event(game_id="game_id", type=EventType.QUEST_STARTED, recipients=[], payload={})
 
     # When
     with pytest.raises(ValueError):

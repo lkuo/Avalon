@@ -15,7 +15,7 @@ def game_service(mocker):
 def test_end_game_state_with_assassination_attempts_left(game_service):
     # Given
     state = EndGameState(game_service)
-    event = Event(game_id="game_id", type=EventType.ASSASSINATION_TARGET_SUBMITTED, recipient=[],
+    event = Event(game_id="game_id", type=EventType.ASSASSINATION_TARGET_SUBMITTED, recipients=[],
                   payload={})
     game_service.get_assassination_attempts.return_value = 1
 
@@ -32,7 +32,7 @@ def test_end_game_state_with_assassination_attempts_left(game_service):
 def test_end_game_state_without_assassination_attempts_left(game_service):
     # Given
     state = EndGameState(game_service)
-    event = Event(game_id="game_id", type=EventType.ASSASSINATION_TARGET_SUBMITTED, recipient=[],
+    event = Event(game_id="game_id", type=EventType.ASSASSINATION_TARGET_SUBMITTED, recipients=[],
                   payload={})
     game_service.get_assassination_attempts.return_value = 0
 
@@ -48,7 +48,7 @@ def test_end_game_state_without_assassination_attempts_left(game_service):
 def test_end_game_state_with_invalid_event(game_service):
     # Given
     state = EndGameState(game_service)
-    invalid_event = Event(game_id="game_id", type=EventType.QUEST_STARTED, recipient=[], payload={})
+    invalid_event = Event(game_id="game_id", type=EventType.QUEST_STARTED, recipients=[], payload={})
 
     # When
     with pytest.raises(ValueError):

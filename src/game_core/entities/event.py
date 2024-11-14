@@ -9,6 +9,6 @@ from game_core.constants.event_type import EventType
 class Event:
     game_id: str
     type: EventType
-    recipient: list[str]  # empty list indicates a public event visible to everyone
+    recipients: list[str]  # empty list indicates a public event visible to everyone
     payload: dict[str, Any]
     timestamp: int = int(datetime.now().timestamp())

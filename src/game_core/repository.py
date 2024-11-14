@@ -17,3 +17,15 @@ class Repository(ABC):
 
     def put_player(self, game_id: str, name: str, secret: str) -> Player:
         pass
+
+    def put_players(self, game_id, players: list[Player]) -> list[Player]:
+        pass
+
+    def get_players(self, game_id: str) -> list[Player]:
+        pass
+
+    def put_events(self, events: list[Event]):
+        pass
+
+    def put_game(self, game):
+        pass
