@@ -1,9 +1,10 @@
 from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass
 class GameConfig:
-    mission_number_size: dict[int, int]
+    quest_team_size: dict[int, int]
     max_round: int
     roles: dict[str, list[str]]
     assassination_attempt: int
@@ -15,3 +16,5 @@ class Game:
     status: str
     result: str
     config: GameConfig
+    player_ids: Optional[list[str]]
+    leader_id: Optional[str]

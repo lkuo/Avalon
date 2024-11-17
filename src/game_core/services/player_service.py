@@ -65,3 +65,6 @@ class PlayerService:
                 player.known_player_ids.extend(role_player_ids[known_role])
 
         return self._repository.put_players(game_id, players)
+
+    def get_players(self, game_id) -> list[Player]:
+        return self._repository.get_players(game_id)

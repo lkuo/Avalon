@@ -1,3 +1,4 @@
+import random
 from unittest.mock import call
 
 import pytest
@@ -41,7 +42,6 @@ def test_handle_game_started(mocker, game_service, repository, player_service, c
     mock_event.side_effect = lambda *args, **kwargs: Event(*args, **kwargs, timestamp=TIMESTAMP)
     game_id = "game_id"
     game_config = mocker.MagicMock()
-    event = Event(game_id, EventType.GAME_STARTED, [], game_config)
     game = mocker.MagicMock()
     game.status = GameStatus.NotStarted
     game.config = game_config
@@ -62,6 +62,7 @@ def test_handle_game_started(mocker, game_service, repository, player_service, c
         villager_player2
     ]
     player_service.assign_roles.return_value = players
+    player_service.get_players.return_value = players
     events = [
         _get_player_event(game_id, merlin_player.id, Role.Merlin, [mordred_player]),
         _get_player_event(game_id, mordred_player.id, Role.Mordred, [merlin_player]),
@@ -69,9 +70,12 @@ def test_handle_game_started(mocker, game_service, repository, player_service, c
         _get_player_event(game_id, villager_player1.id, Role.Villager, []),
         _get_player_event(game_id, villager_player2.id, Role.Villager, [])
     ]
+    player_ids = [p.id for p in players]
+    random.shuffle(player_ids)
+    game_started_event = Event(game_id, EventType.GAME_STARTED, [], {"player_ids": player_ids})
 
     # When
-    game_service.handle_game_started(event)
+    game_service.handle_game_started(game_started_event)
 
     # Then
     player_service.assign_roles.assert_called_once_with(game_id, game.config.roles)
@@ -79,6 +83,7 @@ def test_handle_game_started(mocker, game_service, repository, player_service, c
     calls = [call(player.id, event) for player, event in zip(players, events)]
     comm_service.notify.assert_has_calls(calls, any_order=True)
     game.status = GameStatus.InProgress
+    game.player_ids = player_ids
     repository.put_game.assert_called_once_with(game)
 
 
@@ -118,6 +123,30 @@ def test_handle_game_started_with_game_not_exists(mocker, game_service, player_s
     repository.get_game.assert_called_once_with(game_id)
     player_service.assign_roles.assert_not_called()
     repository.put_events.assert_not_called()
+    repository.put_events.assert_not_called()
+    comm_service.notify.assert_not_called()
+
+
+@pytest.mark.parametrize("player_ids", [[], ["invalid_id1", "invalid_id2"]])
+def test_handle_game_started_with_invalid_player_ids(mocker, game_service, player_service, repository, comm_service,
+                                                     player_ids):
+    # Given
+    game_id = "game_id"
+    event = Event(game_id, EventType.GAME_STARTED, [], {"player_ids": player_ids})
+    game = mocker.MagicMock()
+    game.status = GameStatus.NotStarted
+    repository.get_game.return_value = game
+    players = [Player("player1", "player1", "secret1", Role.Merlin)]
+    player_service.get_players.return_value = players
+    player_service.assign_roles.return_value = players
+
+    # When
+    with pytest.raises(ValueError):
+        game_service.handle_game_started(event)
+
+    # Then
+    repository.get_game.assert_called_once_with(game_id)
+    player_service.assign_roles.assert_called_once_with(game_id, game.config.roles)
     repository.put_events.assert_not_called()
     comm_service.notify.assert_not_called()
 

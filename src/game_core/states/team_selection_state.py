@@ -8,7 +8,7 @@ from game_core.constants.state_name import StateName
 
 class TeamSelectionState(State):
     """
-    Transitions from LeaderAssignmentState
+    Transitions from GameSetupState, RoundVotingState, QuestVotingState
     Broadcast the leader is choosing a team, collect all votes then broadcast proposal
     Transitions to RoundVoting State
     """
@@ -28,4 +28,10 @@ class TeamSelectionState(State):
         return self._round_voting_state
 
     def on_enter(self, game_id: str) -> None:
+        """
+        Verifies the previous state, then creates a round ana a quest if needed.
+        Rotates the leader
+        :param game_id:
+        :return:
+        """
         self._quest_service.handle_on_enter_team_selection_state(game_id)

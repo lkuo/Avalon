@@ -1,6 +1,9 @@
+from typing import Any
+
 from game_core.constants.event_type import EventType
 from game_core.constants.game_status import GameStatus
 from game_core.entities.event import Event
+from game_core.entities.player import Player
 from game_core.repository import Repository
 from game_core.services.comm_service import CommService
 from game_core.services.player_service import PlayerService
@@ -12,16 +15,18 @@ class GameService:
         self._player_service = player_service
         self._comm_service = comm_service
 
-    def handle_game_started(self, event) -> None:
+    def handle_game_started(self, event: Event) -> None:
         game_id = event.game_id
         game = self._get_game(game_id)
         players = self._player_service.assign_roles(game_id, game.config.roles)
+        player_ids = _get_player_ids(players, event.payload)
         player_events = _get_player_event(game_id, players)
 
         self._repository.put_events(list(player_events.values()))
         for player_id, event in player_events.items():
             self._comm_service.notify(player_id, event)
         game.status = GameStatus.InProgress
+        game.player_ids = player_ids
         self._repository.put_game(game)
 
     def _get_game(self, game_id):
@@ -43,6 +48,17 @@ class GameService:
 
     def handle_assassination_target_submitted(self, event: Event):
         pass
+
+
+def _get_player_ids(players: list[Player], payload: dict[str, Any]) -> list[str]:
+    player_ids = payload.get("player_ids", [])
+    if not player_ids:
+        raise ValueError("player_ids is required in GameStarted event payload")
+    given_player_ids = set(player_ids)
+    actual_player_ids = set([player.id for player in players])
+    if given_player_ids != actual_player_ids:
+        raise ValueError(f"player_ids in GameStarted event payload does not match DB, got {given_player_ids}")
+    return player_ids
 
 
 def _get_player_event(game_id, players) -> dict[str: Event]:
