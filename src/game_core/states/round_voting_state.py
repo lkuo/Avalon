@@ -1,3 +1,4 @@
+from game_core.constants.voting_result import VotingResult
 from game_core.entities.event import Event
 from game_core.constants.event_type import EventType
 from game_core.services.round_service import RoundService
@@ -26,15 +27,18 @@ class RoundVotingState(State):
         self._round_service.handle_round_vote_cast(event)
 
         game_id = event.game_id
-        if not self._round_service.is_round_vote_completed(game_id):
+        quest_number = event.payload.get("quest_number")
+        round_number = event.payload.get("round_number")
+        if not self._round_service.is_round_vote_completed(game_id, quest_number, round_number):
             return self
-        elif self._round_service.is_proposal_passed(game_id):
+
+        result = self._round_service.is_proposal_passed(game_id, quest_number, round_number)
+        voting_result = VotingResult.Passed if result else VotingResult.Failed
+        game_round = self._round_service.set_round_result(game_id, quest_number, round_number, voting_result)
+        if game_round.result == VotingResult.Passed:
             return self._quest_voting_state
         else:
             return self._team_selection_state
 
     def on_enter(self, game_id: str) -> None:
         self._round_service.on_enter_round_voting_state(game_id)
-
-    def on_exit(self, game_id: str) -> None:
-        self._round_service.on_exit_round_voting_state(game_id)

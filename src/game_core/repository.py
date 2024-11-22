@@ -6,6 +6,7 @@ from game_core.entities.game import Game
 from game_core.entities.player import Player
 from game_core.entities.quest import Quest
 from game_core.entities.round import Round
+from game_core.entities.round_vote import RoundVote
 
 
 class Repository(ABC):
@@ -42,4 +43,25 @@ class Repository(ABC):
         pass
 
     def put_round(self, game_id: str, quest_number: int, round_number: int, leader_id: str) -> Round:
+        pass
+
+    def update_round(self, game_round: Round) -> Round:
+        pass
+
+    def get_player(self, game_id: str, player_id: str) -> Player:
+        pass
+
+    def get_quest(self, game_id: str, quest_number: int) -> Quest:
+        pass
+
+    def get_round(self, game_id: str, quest_number: int, round_number: int) -> Round:
+        pass
+
+    def put_round_vote(self, game_id, quest_number, round_number, player_id, is_approved):
+        pass
+
+    def get_round_vote(self, game_id, quest_number, round_number, player_id) -> RoundVote:
+        pass
+
+    def get_round_votes(self, game_id: str, quest_number: int, round_number: int) -> list[RoundVote]:
         pass
