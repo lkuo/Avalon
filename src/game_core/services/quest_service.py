@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, Tuple
+from typing import Optional
 
 from game_core.constants.event_type import EventType
 from game_core.entities.event import Event
@@ -16,21 +16,35 @@ class QuestService:
         self._round_service = round_service
         self._comm_service = comm_service
 
-    def on_enter_quest_voting_state(self, game_id) -> None:
+    def on_enter_quest_voting_state(self, game_id: str) -> None:
         """
         On enter broadcast quest voting started by team members, and notify team members to cast vote
-        On event saves vote and broadcast player X has voted
-        On exit broadcast the quest voting result and updates mission
         :param game_id:
         :return:
         """
-        pass
+        quest = self._get_last_quest(game_id)
+        team_member_ids = quest.team_member_ids
+        payload = {
+            "game_id": game_id,
+            "quest_number": quest.quest_number,
+            "team_member_ids": team_member_ids
+        }
+        event = self._repository.put_event(game_id, EventType.QUEST_VOTING_STARTED.value, [], payload,
+                                           int(datetime.now().timestamp()))
+        self._comm_service.broadcast(event)
+        event = self._repository.put_event(game_id, EventType.QUEST_VOTE_REQUESTED.value, team_member_ids, {},
+                                           int(datetime.now().timestamp()))
+        self._comm_service.broadcast(event, team_member_ids)
 
     def on_exit_quest_voting_state(self, game_id) -> None:
         pass
 
     def handle_quest_vote_cast(self, event: Event) -> None:
-        pass
+        """
+        On event saves vote and broadcast player X has voted
+        :param event:
+        :return:
+        """
 
     def is_quest_vote_completed(self, game_id):
         pass
@@ -96,3 +110,8 @@ class QuestService:
         game.leader_id = next_leader_id
         self._repository.put_game(game)
         return next_leader_id
+
+    def set_team_member_ids(self, game_id: str, quest_number: int, team_member_ids: list[str]) -> None:
+        quest = self._repository.get_quest(game_id, quest_number)
+        quest.team_member_ids = team_member_ids
+        self._repository.update_quest(quest)

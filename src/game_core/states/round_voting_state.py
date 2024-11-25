@@ -1,6 +1,7 @@
 from game_core.constants.voting_result import VotingResult
 from game_core.entities.event import Event
 from game_core.constants.event_type import EventType
+from game_core.services.quest_service import QuestService
 from game_core.services.round_service import RoundService
 from game_core.states.state import State
 from game_core.constants.state_name import StateName
@@ -14,11 +15,13 @@ class RoundVotingState(State):
 
     """
 
-    def __init__(self, team_selection_state: State, quest_voting_state: State, round_service: RoundService):
+    def __init__(self, team_selection_state: State, quest_voting_state: State, round_service: RoundService,
+                 quest_service: QuestService):
         super().__init__(StateName.ROUND_VOTING)
         self._team_selection_state = team_selection_state
         self._quest_voting_state = quest_voting_state
         self._round_service = round_service
+        self._quest_service = quest_service
 
     def handle(self, event: Event) -> State:
         if event.type != EventType.ROUND_VOTE_CAST:
@@ -36,6 +39,7 @@ class RoundVotingState(State):
         voting_result = VotingResult.Passed if result else VotingResult.Failed
         game_round = self._round_service.set_round_result(game_id, quest_number, round_number, voting_result)
         if game_round.result == VotingResult.Passed:
+            self._quest_service.set_team_member_ids(game_id, quest_number, game_round.team_member_ids)
             return self._quest_voting_state
         else:
             return self._team_selection_state

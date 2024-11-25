@@ -1,5 +1,4 @@
-from typing import Any
-from unittest.mock import ANY
+from unittest.mock import ANY, call
 
 import pytest
 
@@ -120,3 +119,49 @@ def test_handle_on_enter_team_selection_state_rotate_leader(mocker, quest_servic
     round_service.create_round.assert_called_once_with(game_id, player_ids[next_leader_id], ANY)
     game.leader_id = player_ids[next_leader_id]
     repository.put_game.assert_called_once_with(game)
+
+
+def test_set_team_member_ids(mocker, quest_service, repository):
+    # Given
+    game_id = "game_id"
+    quest_number = 1
+    team_member_ids = ["player_id1", "player_id2"]
+    quest = mocker.MagicMock(spec=Quest)
+    repository.get_quest.return_value = quest
+
+    # When
+    quest_service.set_team_member_ids(game_id, quest_number, team_member_ids)
+
+    # then
+    updated_quest = quest
+    updated_quest.team_member_ids = team_member_ids
+    repository.update_quest.assert_called_once_with(updated_quest)
+
+
+def test_on_enter_quest_voting_state(mocker, quest_service, repository, comm_service):
+    # Given
+    game_id = "game_id"
+    quest_number = 1
+    team_member_ids = ["player_id1", "player_id2"]
+    quest = mocker.MagicMock(spec=Quest)
+    quest.quest_number = quest_number
+    quest.team_member_ids = team_member_ids
+    repository.get_quests.return_value = [quest]
+    quest_voting_started_event = mocker.MagicMock()
+    quest_vote_requested_event = mocker.MagicMock()
+    repository.put_event.side_effect = [quest_voting_started_event, quest_vote_requested_event]
+    timestamp = 1234567890
+    mock_datetime = mocker.patch("game_core.services.quest_service.datetime")
+    mock_datetime.now.return_value.timestamp.return_value = timestamp
+
+    # When
+    quest_service.on_enter_quest_voting_state(game_id)
+
+    # then
+    repository.put_event.assert_has_calls([call(game_id, EventType.QUEST_VOTING_STARTED.value, [],
+                                                {"game_id": game_id, "quest_number": quest_number,
+                                                 "team_member_ids": team_member_ids}, timestamp),
+                                           call(game_id, EventType.QUEST_VOTE_REQUESTED.value, team_member_ids, {},
+                                                timestamp)])
+    comm_service.broadcast.assert_has_calls(
+        [call(quest_voting_started_event), call(quest_vote_requested_event, team_member_ids)])

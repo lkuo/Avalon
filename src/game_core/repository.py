@@ -65,3 +65,6 @@ class Repository(ABC):
 
     def get_round_votes(self, game_id: str, quest_number: int, round_number: int) -> list[RoundVote]:
         pass
+
+    def update_quest(self, quest: Quest) -> Quest:
+        pass

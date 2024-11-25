@@ -4,6 +4,7 @@ from game_core.constants.voting_result import VotingResult
 from game_core.entities.event import Event
 from game_core.constants.event_type import EventType
 from game_core.entities.round import Round
+from game_core.services.quest_service import QuestService
 from game_core.services.round_service import RoundService
 from game_core.states.quest_voting_state import QuestVotingState
 from game_core.states.round_voting_state import RoundVotingState
@@ -30,14 +31,20 @@ def round_service(mocker):
 
 
 @pytest.fixture
+def quest_service(mocker):
+    return mocker.MagicMock(spec=QuestService)
+
+
+@pytest.fixture
 def event():
     payload = {"quest_number": QUEST_NUMBER, "round_number": ROUND_NUMBER}
     return Event(game_id="game_id", type=EventType.ROUND_VOTE_CAST, recipients=[], payload=payload)
 
 
-def test_round_voting_state_when_round_not_voted(team_selection_state, quest_voting_state, round_service, event):
+def test_round_voting_state_when_round_not_voted(team_selection_state, quest_voting_state, round_service, quest_service,
+                                                 event):
     # Given
-    round_voting_state = RoundVotingState(team_selection_state, quest_voting_state, round_service)
+    round_voting_state = RoundVotingState(team_selection_state, quest_voting_state, round_service, quest_service)
     round_service.is_round_vote_completed.return_value = False
 
     # When
@@ -53,13 +60,15 @@ def test_round_voting_state_when_round_not_voted(team_selection_state, quest_vot
 
 
 def test_round_voting_state_when_proposal_passed(mocker, team_selection_state, quest_voting_state, round_service,
-                                                 event):
+                                                 quest_service, event):
     # Given
-    round_voting_state = RoundVotingState(team_selection_state, quest_voting_state, round_service)
+    round_voting_state = RoundVotingState(team_selection_state, quest_voting_state, round_service, quest_service)
     round_service.is_round_vote_completed.return_value = True
     round_service.is_proposal_passed.return_value = True
     game_round = mocker.MagicMock(spec=Round)
+    team_member_ids = ["team_member_id_1", "team_member_id_2"]
     game_round.result = VotingResult.Passed
+    game_round.team_member_ids = team_member_ids
     round_service.set_round_result.return_value = game_round
 
     # When
@@ -73,12 +82,13 @@ def test_round_voting_state_when_proposal_passed(mocker, team_selection_state, q
     round_service.is_proposal_passed.assert_called_once_with(event.game_id, QUEST_NUMBER, ROUND_NUMBER)
     round_service.set_round_result.assert_called_once_with(event.game_id, QUEST_NUMBER, ROUND_NUMBER,
                                                            VotingResult.Passed)
+    quest_service.set_team_member_ids.assert_called_once_with(event.game_id, QUEST_NUMBER, team_member_ids)
 
 
 def test_round_voting_state_when_proposal_rejected(mocker, team_selection_state, quest_voting_state, round_service,
-                                                   event):
+                                                   quest_service, event):
     # Given
-    round_voting_state = RoundVotingState(team_selection_state, quest_voting_state, round_service)
+    round_voting_state = RoundVotingState(team_selection_state, quest_voting_state, round_service, quest_service)
     round_service.is_round_vote_completed.return_value = True
     round_service.is_proposal_passed.return_value = False
     game_round = mocker.MagicMock(spec=Round)
@@ -98,9 +108,10 @@ def test_round_voting_state_when_proposal_rejected(mocker, team_selection_state,
                                                            VotingResult.Failed)
 
 
-def test_round_voting_state_with_invalid_event_type(team_selection_state, quest_voting_state, round_service):
+def test_round_voting_state_with_invalid_event_type(team_selection_state, quest_voting_state, round_service,
+                                                    quest_service):
     # Given
-    round_voting_state = RoundVotingState(team_selection_state, quest_voting_state, round_service)
+    round_voting_state = RoundVotingState(team_selection_state, quest_voting_state, round_service, quest_service)
     invalid_event = Event(game_id="game_id", type=EventType.QUEST_STARTED, recipients=[], payload={})
 
     # When
@@ -114,9 +125,9 @@ def test_round_voting_state_with_invalid_event_type(team_selection_state, quest_
     round_service.is_proposal_passed.assert_not_called()
 
 
-def test_round_voting_state_on_enter(team_selection_state, quest_voting_state, round_service):
+def test_round_voting_state_on_enter(team_selection_state, quest_voting_state, round_service, quest_service):
     # Given
-    state = RoundVotingState(team_selection_state, quest_voting_state, round_service)
+    state = RoundVotingState(team_selection_state, quest_voting_state, round_service, quest_service)
     game_id = "game_id"
 
     # When
