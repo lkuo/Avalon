@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Optional
 
 from game_core.constants.event_type import EventType
+from game_core.constants.voting_result import VotingResult
 from game_core.entities.event import Event
 from game_core.entities.quest import Quest
 from game_core.repository import Repository
@@ -36,29 +37,66 @@ class QuestService:
                                            int(datetime.now().timestamp()))
         self._comm_service.broadcast(event, team_member_ids)
 
-    def on_exit_quest_voting_state(self, game_id) -> None:
-        pass
-
     def handle_quest_vote_cast(self, event: Event) -> None:
         """
         On event saves vote and broadcast player X has voted
         :param event:
         :return:
         """
+        self._validate_quest_vote_cast_event(event)
+        payload = event.payload
+        game_id = event.game_id
+        player_id = payload.get("player_id")
+        is_approved = payload.get("is_approved")
+        quest_number = payload.get("quest_number")
+        self._repository.put_quest_vote(game_id, quest_number, player_id, is_approved)
+        quest_vote_cast_event_payload = {
+            "player_id": player_id,
+            "quest_number": quest_number
+        }
+        quest_vote_cast_event = self._repository.put_event(game_id, EventType.QUEST_VOTE_CAST.value, [],
+                                                           quest_vote_cast_event_payload,
+                                                           int(datetime.now().timestamp()))
+        self._comm_service.broadcast(quest_vote_cast_event)
 
-    def is_quest_vote_completed(self, game_id):
-        pass
+    def _validate_quest_vote_cast_event(self, event: Event) -> None:
+        payload = event.payload
+        if not payload:
+            raise ValueError("Quest vote payload is empty")
+        player_id = payload.get("player_id")
+        is_approved = payload.get("is_approved")
+        quest_number = payload.get("quest_number")
+        if not player_id or is_approved is None or not quest_number:
+            raise ValueError(f"Invalid QuestVoteCast event {payload}")
+        game_id = event.game_id
+        player = self._repository.get_player(game_id, player_id)
+        if not player:
+            raise ValueError(f"Player {player_id} not found")
+        quest = self._repository.get_quest(game_id, quest_number)
+        if not quest or quest.result:
+            raise ValueError(f"Quest not exist or completed {quest}")
 
-    def is_mission_passed(self, game_id):
-        pass
+    def is_quest_vote_completed(self, game_id: str, quest_number: int) -> bool:
+        quest = self._repository.get_quest(game_id, quest_number)
+        quest_votes = self._repository.get_quest_votes(game_id, quest_number)
+        return len(quest_votes) == len(quest.team_member_ids)
 
-    def has_won_majority(self, game_id) -> bool:
+    def is_quest_passed(self, game_id: str, quest_number: int) -> bool:
+        quest_votes = self._repository.get_quest_votes(game_id, quest_number)
+        disapprove_votes = [qv for qv in quest_votes if not qv.is_approved]
+
+        return len(disapprove_votes) <= (0 if quest_number != 4 else 1)
+
+    def has_majority(self, game_id: str) -> bool:
         """
         If any team has won 3 out of 5 missions
         :param game_id:
         :return:
         """
-        pass
+        quests = self._repository.get_quests(game_id)
+        passed_quests = [q for q in quests if q.result == VotingResult.Passed]
+        failed_quests = [q for q in quests if q.result == VotingResult.Failed]
+        return len(passed_quests) >= 3 or len(failed_quests) >= 3
 
     def handle_on_enter_team_selection_state(self, game_id: str) -> None:
         current_quest = self._get_last_quest(game_id)
@@ -115,3 +153,13 @@ class QuestService:
         quest = self._repository.get_quest(game_id, quest_number)
         quest.team_member_ids = team_member_ids
         self._repository.update_quest(quest)
+
+    def set_quest_result(self, game_id: str, quest_number: int, result: VotingResult) -> Quest:
+        quest = self._repository.get_quest(game_id, quest_number)
+        quest.result = result
+        updated_quest = self._repository.update_quest(quest)
+        event = self._repository.put_event(game_id, EventType.QUEST_COMPLETED.value, [],
+                                           {"quest_number": quest_number, "result": result.value},
+                                           int(datetime.now().timestamp()))
+        self._comm_service.broadcast(event)
+        return updated_quest

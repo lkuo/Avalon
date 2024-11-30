@@ -1,3 +1,4 @@
+from game_core.constants.voting_result import VotingResult
 from game_core.entities.event import Event
 from game_core.constants.event_type import EventType
 from game_core.services.quest_service import QuestService
@@ -24,15 +25,16 @@ class QuestVotingState(State):
             raise ValueError(f"QuestVotingState expects only {EventType.QUEST_VOTE_CAST.value}, got {event.type.value}")
 
         self._quest_service.handle_quest_vote_cast(event)
-        if not self._quest_service.is_quest_vote_completed(event.game_id):
+        quest_number = event.payload.get("quest_number")
+        if not self._quest_service.is_quest_vote_completed(event.game_id, quest_number):
             return self
-        elif self._quest_service.has_won_majority(event.game_id):
+        voting_result = VotingResult.Passed if self._quest_service.is_quest_passed(
+            event.game_id, quest_number) else VotingResult.Failed
+        self._quest_service.set_quest_result(event.game_id, quest_number, voting_result)
+        if self._quest_service.has_majority(event.game_id):
             return self._end_game_state
         else:
             return self._team_selection_state
 
     def on_enter(self, game_id: str) -> None:
         self._quest_service.on_enter_quest_voting_state(game_id)
-
-    def on_exit(self, game_id: str) -> None:
-        self._quest_service.on_exit_quest_voting_state(game_id)

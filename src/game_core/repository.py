@@ -5,6 +5,7 @@ from game_core.entities.event import Event
 from game_core.entities.game import Game
 from game_core.entities.player import Player
 from game_core.entities.quest import Quest
+from game_core.entities.quest_vote import QuestVote
 from game_core.entities.round import Round
 from game_core.entities.round_vote import RoundVote
 
@@ -67,4 +68,10 @@ class Repository(ABC):
         pass
 
     def update_quest(self, quest: Quest) -> Quest:
+        pass
+
+    def put_quest_vote(self, game_id, quest_number, player_id, is_approved):
+        pass
+
+    def get_quest_votes(self, game_id, quest_number) -> list[QuestVote]:
         pass
