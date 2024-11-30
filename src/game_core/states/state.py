@@ -21,5 +21,5 @@ class State(ABC):
     def on_enter(self, game_id: str) -> None:
         pass
 
-    def on_exit(self, game_id: str) -> None:
+    def broadcast_game_results(self, game_id: str) -> None:
         pass

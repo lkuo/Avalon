@@ -7,6 +7,7 @@ from game_core.constants.event_type import EventType
 from game_core.constants.game_status import GameStatus
 from game_core.constants.role import Role
 from game_core.entities.event import Event
+from game_core.entities.game import Game, GameConfig
 from game_core.entities.player import Player
 from game_core.repository import Repository
 from game_core.services.comm_service import CommService
@@ -165,3 +166,75 @@ def _get_player_event(game_id, player_id, role, known_players) -> Event:
         },
         TIMESTAMP,
     )
+
+
+GAME_ASSASSINATION_ATTEMPTS = 2
+
+
+@pytest.mark.parametrize("game_assassination_attempts, result", [(None, GAME_ASSASSINATION_ATTEMPTS), (0, 0), (1, 1)])
+def test_get_assassination_attempts(mocker, game_service, repository, game_assassination_attempts, result):
+    # Given
+    game_id = "game_id"
+    game = mocker.MagicMock(spec=Game)
+    game.assassination_attempts = game_assassination_attempts
+    game_config = mocker.MagicMock(spec=GameConfig)
+    game_config.assassination_attempts = GAME_ASSASSINATION_ATTEMPTS
+    game.config = game_config
+    repository.get_game.return_value = game
+
+    # When
+    res = game_service.get_assassination_attempts(game_id)
+
+    # Then
+    assert res == result
+
+
+def test_get_assassination_attempts_with_game_not_found(game_service, repository):
+    # Given
+    game_id = "game_id"
+    repository.get_game.return_value = None
+
+    # When
+    with pytest.raises(ValueError):
+        game_service.get_assassination_attempts(game_id)
+
+
+def test_get_assassination_attempts_with_game_config_not_found(mocker, game_service, repository):
+    # Given
+    game_id = "game_id"
+    game = mocker.MagicMock(spec=Game)
+    game.config = None
+    repository.get_game.return_value = None
+
+    # When
+    with pytest.raises(ValueError):
+        game_service.get_assassination_attempts(game_id)
+
+
+def test_on_enter_end_game_state(mocker, game_service, repository, comm_service):
+    # Given
+    game_id = "game_id"
+    game = mocker.MagicMock(spec=Game)
+    assassin_id = "assassin_id"
+    repository.get_players.return_value = [
+        Player("player1", "player1", "secret1", Role.Merlin),
+        Player("player2", "player2", "secret2", Role.Mordred),
+        Player(assassin_id, "player3", "secret3", Role.Assassin),
+    ]
+    assassination_target_requested_event = mocker.MagicMock(spec=Event)
+    assassination_started_event = mocker.MagicMock(spec=Event)
+    repository.put_event.side_effect = [assassination_target_requested_event, assassination_started_event]
+    timestamp = 1234567890
+    mock_datetime = mocker.patch("game_core.services.game_service.datetime")
+    mock_datetime.now.return_value.timestamp.return_value = timestamp
+
+    # When
+    game_service.on_enter_end_game_state(game_id)
+
+    # Then
+    repository.put_event.assert_has_calls([
+        call(game_id, EventType.ASSASSINATION_TARGET_REQUESTED.value, [assassin_id], {}, timestamp),
+        call(game_id, EventType.ASSASSINATION_STARTED.value, [], {}, timestamp),
+    ])
+    comm_service.notify.assert_called_once_with(assassin_id, assassination_target_requested_event)
+    comm_service.broadcast.assert_called_once_with(assassination_started_event)

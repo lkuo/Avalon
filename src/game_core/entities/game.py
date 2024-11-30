@@ -7,7 +7,7 @@ class GameConfig:
     quest_team_size: dict[int, int]
     max_round: int
     roles: dict[str, list[str]]
-    assassination_attempt: int
+    assassination_attempts: int
 
 
 @dataclass
@@ -18,3 +18,4 @@ class Game:
     config: GameConfig
     player_ids: Optional[list[str]]
     leader_id: Optional[str]
+    assassination_attempts: Optional[int]

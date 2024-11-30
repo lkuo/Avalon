@@ -1,7 +1,9 @@
+from datetime import datetime
 from typing import Any
 
 from game_core.constants.event_type import EventType
 from game_core.constants.game_status import GameStatus
+from game_core.constants.role import Role
 from game_core.entities.event import Event
 from game_core.entities.player import Player
 from game_core.repository import Repository
@@ -37,16 +39,37 @@ class GameService:
             raise ValueError(f"Game {game_id} is not in NotStarted state, got {game.status}")
         return game
 
-    def on_exit_end_game_state(self, game_id):
-        pass
+    def get_assassination_attempts(self, game_id: str) -> int:
+        game = self._repository.get_game(game_id)
+        if not game:
+            raise ValueError(f"Game {game_id} not found")
+        game_config = game.config
+        if not game_config:
+            raise ValueError(f"Game {game_id} config not found")
+        return game.assassination_attempts if game.assassination_attempts is not None else game_config.assassination_attempts
 
-    def get_assassination_attempts(self, game_id) -> int:
-        pass
-
-    def on_enter_end_game_state(self, game_id):
-        pass
+    def on_enter_end_game_state(self, game_id: str) -> None:
+        players = self._repository.get_players(game_id)
+        assassins = [player for player in players if player.role == Role.Assassin]
+        if len(assassins) != 1:
+            raise ValueError(f"Game {game_id} has {len(assassins)} assassins, expected 1")
+        assassin = assassins[0]
+        assassination_target_requested_event = self._repository.put_event(game_id,
+                                                                          EventType.ASSASSINATION_TARGET_REQUESTED.value,
+                                                                          [assassin.id], {},
+                                                                          int(datetime.now().timestamp()))
+        self._comm_service.notify(assassin.id, assassination_target_requested_event)
+        assassination_started_event = self._repository.put_event(game_id, EventType.ASSASSINATION_STARTED.value, [], {},
+                                                                 int(datetime.now().timestamp()))
+        self._comm_service.broadcast(assassination_started_event)
 
     def handle_assassination_target_submitted(self, event: Event):
+        pass
+
+    def broadcast_game_results(self, game_id):
+        pass
+
+    def is_finished(self, game_id: str) -> bool:
         pass
 
 
