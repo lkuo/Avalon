@@ -20,14 +20,19 @@ class EndGameState(State):
         if event.type != EventType.ASSASSINATION_TARGET_SUBMITTED:
             raise ValueError(f"EndGameState expects only ASSASSINATION_TARGET_SUBMITTED, got {event.type.value}")
 
+        assassination_attempts = self._game_service.get_assassination_attempts(event.game_id)
+        if assassination_attempts == 0:
+            self._game_service.handle_game_ended(event.game_id)
+            return None
+
         self._game_service.handle_assassination_target_submitted(event)
 
-        return None if self._game_service.is_finished(event.game_id) else self
+        return None if self._game_service.is_game_finished(event.game_id) else self
 
     def on_enter(self, game_id: str) -> None:
         assassination_attempts = self._game_service.get_assassination_attempts(game_id)
         if assassination_attempts == 0:
-            self._game_service.broadcast_game_results(game_id)
+            self._game_service.handle_game_ended(game_id)
             return
 
         self._game_service.on_enter_end_game_state(game_id)

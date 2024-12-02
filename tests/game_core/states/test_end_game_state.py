@@ -17,7 +17,7 @@ def test_end_game_state_when_game_not_ended(game_service):
     state = EndGameState(game_service)
     event = Event(game_id="game_id", type=EventType.ASSASSINATION_TARGET_SUBMITTED, recipients=[],
                   payload={})
-    game_service.is_finished.return_value = False
+    game_service.is_game_finished.return_value = False
 
     # When
     next_state = state.handle(event)
@@ -33,7 +33,7 @@ def test_end_game_state_when_game_ended(game_service):
     state = EndGameState(game_service)
     event = Event(game_id="game_id", type=EventType.ASSASSINATION_TARGET_SUBMITTED, recipients=[],
                   payload={})
-    game_service.is_finished.return_value = True
+    game_service.is_game_finished.return_value = True
 
     # When
     next_state = state.handle(event)
@@ -68,7 +68,7 @@ def test_end_game_state_on_enter_with_assassination_attempts(game_service):
     # Then
     game_service.get_assassination_attempts.assert_called_once_with(game_id)
     game_service.on_enter_end_game_state.assert_called_once()
-    game_service.broadcast_game_results.assert_not_called()
+    game_service.handle_game_ended.assert_not_called()
 
 
 def test_end_game_state_on_enter_without_assassination_attempts(game_service):
@@ -83,4 +83,4 @@ def test_end_game_state_on_enter_without_assassination_attempts(game_service):
     # Then
     game_service.get_assassination_attempts.assert_called_once_with(game_id)
     game_service.on_enter_end_game_state.assert_not_called()
-    game_service.broadcast_game_results.assert_called_once_with(game_id)
+    game_service.handle_game_ended.assert_called_once_with(game_id)

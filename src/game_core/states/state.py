@@ -18,8 +18,5 @@ class State(ABC):
     def handle(self, event: Event) -> Optional[Self]:
         pass
 
-    def on_enter(self, game_id: str) -> None:
-        pass
-
-    def broadcast_game_results(self, game_id: str) -> None:
+    def on_enter(self, game_id: str) -> Optional[Self]:
         pass

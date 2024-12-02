@@ -49,6 +49,9 @@ class GameService:
         return game.assassination_attempts if game.assassination_attempts is not None else game_config.assassination_attempts
 
     def on_enter_end_game_state(self, game_id: str) -> None:
+        self._handle_assassination_started(game_id)
+
+    def _handle_assassination_started(self, game_id: str) -> None:
         players = self._repository.get_players(game_id)
         assassins = [player for player in players if player.role == Role.Assassin]
         if len(assassins) != 1:
@@ -63,14 +66,44 @@ class GameService:
                                                                  int(datetime.now().timestamp()))
         self._comm_service.broadcast(assassination_started_event)
 
-    def handle_assassination_target_submitted(self, event: Event):
-        pass
+    def handle_assassination_target_submitted(self, event: Event) -> None:
+        if not event.payload or not event.payload.get("target_id"):
+            raise ValueError("target_id is required in ASSASSINATION_TARGET_SUBMITTED event payload")
+        target = self._repository.get_player(event.game_id, event.payload["target_id"])
+        if not target:
+            raise ValueError(f"Player {event.payload['target_id']} not found")
+        attempts = self.get_assassination_attempts(event.game_id)
+        game = self._repository.get_game(event.game_id)
+        game.assassination_attempts = attempts - 1
+        self._repository.update_game(game)
+        if target.role == Role.Merlin:
+            assassination_succeeded_event = self._repository.put_event(event.game_id,
+                                                                       EventType.ASSASSINATION_SUCCEEDED.value, [], {},
+                                                                       int(datetime.now().timestamp()))
+            self._comm_service.broadcast(assassination_succeeded_event)
+            self.handle_game_ended(event.game_id)
+            return
 
-    def broadcast_game_results(self, game_id):
-        pass
+        payload = {"target_id": target.id, "role": target.role.value}
+        assassination_failed_event = self._repository.put_event(event.game_id, EventType.ASSASSINATION_FAILED.value, [],
+                                                                payload,
+                                                                int(datetime.now().timestamp()))
+        self._comm_service.broadcast(assassination_failed_event)
 
-    def is_finished(self, game_id: str) -> bool:
-        pass
+    def handle_game_ended(self, game_id: str) -> None:
+        game = self._repository.get_game(game_id)
+        game.status = GameStatus.Finished
+        self._repository.update_game(game)
+        players = self._repository.get_players(game_id)
+        player_roles = {player.id: player.role.value for player in players}
+        payload = {"player_roles": player_roles}
+        game_ended_event = self._repository.put_event(game_id, EventType.GAME_ENDED.value, [], payload,
+                                                      int(datetime.now().timestamp()))
+        self._comm_service.broadcast(game_ended_event)
+
+    def is_game_finished(self, game_id: str) -> bool:
+        game = self._repository.get_game(game_id)
+        return game.status == GameStatus.Finished
 
 
 def _get_player_ids(players: list[Player], payload: dict[str, Any]) -> list[str]:

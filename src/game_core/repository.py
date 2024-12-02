@@ -75,3 +75,6 @@ class Repository(ABC):
 
     def get_quest_votes(self, game_id, quest_number) -> list[QuestVote]:
         pass
+
+    def update_game(self, game: Game):
+        pass

@@ -238,3 +238,129 @@ def test_on_enter_end_game_state(mocker, game_service, repository, comm_service)
     ])
     comm_service.notify.assert_called_once_with(assassin_id, assassination_target_requested_event)
     comm_service.broadcast.assert_called_once_with(assassination_started_event)
+
+
+def test_handle_assassination_target_submitted_failed(mocker, game_service, repository, comm_service):
+    # Given
+    game_id = "game_id"
+    target_id = "target_id"
+    event = mocker.MagicMock(spec=Event)
+    event.game_id = game_id
+    event.payload = {"target_id": target_id}
+    game = mocker.MagicMock(spec=Game)
+    game_config = mocker.MagicMock(spec=GameConfig)
+    game_config.assassination_attempts = GAME_ASSASSINATION_ATTEMPTS
+    game.config = game_config
+    game.assassination_attempts = 1
+    repository.get_game.return_value = game
+    player = mocker.MagicMock(spec=Player)
+    player.id = target_id
+    player.role = Role.Percival
+    repository.get_player.return_value = player
+    assassination_failed_event = mocker.MagicMock(spec=Event)
+    repository.put_event.return_value = assassination_failed_event
+    timestamp = 1234567890
+    mock_datetime = mocker.patch("game_core.services.game_service.datetime")
+    mock_datetime.now.return_value.timestamp.return_value = timestamp
+
+    # When
+    game_service.handle_assassination_target_submitted(event)
+
+    # Then
+    game.assassination_attempts = GAME_ASSASSINATION_ATTEMPTS - 1
+    repository.update_game.assert_called_once_with(game)
+    repository.put_event.assert_called_once_with(game_id, EventType.ASSASSINATION_FAILED.value, [], {
+        "target_id": target_id,
+        "role": player.role.value
+    }, timestamp)
+    comm_service.broadcast.assert_called_once_with(assassination_failed_event)
+
+
+def test_handle_assassination_target_submitted_succeeded(mocker, game_service, repository, comm_service):
+    # Given
+    game_id = "game_id"
+    target_id = "target_id"
+    event = mocker.MagicMock(spec=Event)
+    event.game_id = game_id
+    event.payload = {"target_id": target_id}
+    game = mocker.MagicMock(spec=Game)
+    game_config = mocker.MagicMock(spec=GameConfig)
+    game_config.assassination_attempts = GAME_ASSASSINATION_ATTEMPTS
+    game.config = game_config
+    game.assassination_attempts = 1
+    repository.get_game.return_value = game
+    player = mocker.MagicMock(spec=Player)
+    player.id = target_id
+    player.role = Role.Merlin
+    repository.get_player.return_value = player
+    assassination_succeeded_event = mocker.MagicMock(spec=Event)
+    repository.put_event.return_value = assassination_succeeded_event
+    timestamp = 1234567890
+    mock_datetime = mocker.patch("game_core.services.game_service.datetime")
+    mock_datetime.now.return_value.timestamp.return_value = timestamp
+    game_service.handle_game_ended = mocker.MagicMock()
+
+    # When
+    game_service.handle_assassination_target_submitted(event)
+
+    # Then
+    game.assassination_attempts = GAME_ASSASSINATION_ATTEMPTS - 1
+    repository.update_game.assert_called_once_with(game)
+    repository.put_event.assert_called_once_with(game_id, EventType.ASSASSINATION_SUCCEEDED.value, [], {}, timestamp)
+    comm_service.broadcast.assert_called_once_with(assassination_succeeded_event)
+    game_service.handle_game_ended.assert_called_once_with(game_id)
+
+
+@pytest.mark.parametrize("payload", [None, {}])
+def test_handle_assassination_target_submitted_with_invalid_event_payload(mocker, game_service, repository,
+                                                                          comm_service,
+                                                                          payload):
+    # Given
+    game_id = "game_id"
+    event = mocker.MagicMock(spec=Event)
+    event.game_id = game_id
+    event.payload = payload
+
+    # When
+    with pytest.raises(ValueError):
+        game_service.handle_assassination_target_submitted(event)
+
+    # Then
+    repository.update_game.assert_not_called()
+    repository.put_event.assert_not_called()
+    comm_service.broadcast.assert_not_called()
+
+
+def test_handle_assassination_target_submitted_with_target_not_found(mocker, game_service, repository, comm_service):
+    # Given
+    game_id = "game_id"
+    target_id = "target_id"
+    event = mocker.MagicMock(spec=Event)
+    event.game_id = game_id
+    event.payload = {"target_id": target_id}
+    repository.get_player.return_value = None
+
+    # When
+    with pytest.raises(ValueError):
+        game_service.handle_assassination_target_submitted(event)
+
+    # Then
+    repository.get_player.assert_called_once_with(game_id, target_id)
+    repository.update_game.assert_not_called()
+    repository.put_event.assert_not_called()
+    comm_service.broadcast.assert_not_called()
+
+
+@pytest.mark.parametrize("game_status, result", [(GameStatus.InProgress, False), (GameStatus.Finished, True)])
+def test_is_game_finished(mocker, game_service, repository, game_status, result):
+    # Given
+    game_id = "game_id"
+    game = mocker.MagicMock(spec=Game)
+    game.status = game_status
+    repository.get_game.return_value = game
+
+    # When
+    res = game_service.is_game_finished(game_id)
+
+    # Then
+    assert res == result
