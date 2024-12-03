@@ -4,7 +4,7 @@ from typing import Any
 
 from game_core.constants.event_type import EventType
 
-
+# todo: add id, remove timestamp default value
 @dataclass
 class Event:
     game_id: str

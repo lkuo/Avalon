@@ -4,7 +4,6 @@ from collections import defaultdict
 
 from game_core.constants.role import Role
 from game_core.entities.event import Event
-from game_core.entities.game import GameConfig
 from game_core.entities.player import Player
 from game_core.repository import Repository
 from game_core.services.comm_service import CommService
@@ -15,6 +14,7 @@ class PlayerService:
         self._comm_service = comm_service
         self._repository = repository
 
+    # todo: add docstring
     def handle_player_joined(self, event: Event):
         """
         Persist the player, and create a PlayerJoined event then broadcast the event
@@ -45,6 +45,7 @@ class PlayerService:
         timestamp = event.timestamp
         return self._repository.put_event(game_id, event_type, recipients, payload, timestamp)
 
+    # todo: add docstring
     def assign_roles(self, game_id: str, roles: dict[str, list[str]]) -> list[Player]:
         roles = {Role(k): [Role(v) for v in vals] for k, vals in roles.items()}
         roles[Role.Villager] = []
@@ -65,6 +66,3 @@ class PlayerService:
                 player.known_player_ids.extend(role_player_ids[known_role])
 
         return self._repository.put_players(game_id, players)
-
-    def get_players(self, game_id) -> list[Player]:
-        return self._repository.get_players(game_id)

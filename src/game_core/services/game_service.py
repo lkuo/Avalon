@@ -17,6 +17,8 @@ class GameService:
         self._player_service = player_service
         self._comm_service = comm_service
 
+
+    # todo: add docstring
     def handle_game_started(self, event: Event) -> None:
         game_id = event.game_id
         game = self._get_game(game_id)
@@ -39,6 +41,7 @@ class GameService:
             raise ValueError(f"Game {game_id} is not in NotStarted state, got {game.status}")
         return game
 
+    # todo: add docstring
     def get_assassination_attempts(self, game_id: str) -> int:
         game = self._repository.get_game(game_id)
         if not game:
@@ -48,6 +51,7 @@ class GameService:
             raise ValueError(f"Game {game_id} config not found")
         return game.assassination_attempts if game.assassination_attempts is not None else game_config.assassination_attempts
 
+    # todo: add docstring
     def on_enter_end_game_state(self, game_id: str) -> None:
         self._handle_assassination_started(game_id)
 
@@ -66,6 +70,7 @@ class GameService:
                                                                  int(datetime.now().timestamp()))
         self._comm_service.broadcast(assassination_started_event)
 
+    # todo: add docstring
     def handle_assassination_target_submitted(self, event: Event) -> None:
         if not event.payload or not event.payload.get("target_id"):
             raise ValueError("target_id is required in ASSASSINATION_TARGET_SUBMITTED event payload")
@@ -90,6 +95,7 @@ class GameService:
                                                                 int(datetime.now().timestamp()))
         self._comm_service.broadcast(assassination_failed_event)
 
+    # todo: add docstring
     def handle_game_ended(self, game_id: str) -> None:
         game = self._repository.get_game(game_id)
         game.status = GameStatus.Finished
@@ -101,6 +107,7 @@ class GameService:
                                                       int(datetime.now().timestamp()))
         self._comm_service.broadcast(game_ended_event)
 
+    # todo: add docstring
     def is_game_finished(self, game_id: str) -> bool:
         game = self._repository.get_game(game_id)
         return game.status == GameStatus.Finished

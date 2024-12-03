@@ -9,4 +9,8 @@ class StateMachine:
         self._repository = repository
 
     def handle_event(self, event: Event) -> None:
-        ...
+        next_state = self._current_state.handle(event)
+        if next_state != self._current_state:
+            self._current_state.on_exit()
+            next_state.on_enter()
+            self._current_state = next_state

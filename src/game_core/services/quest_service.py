@@ -17,6 +17,7 @@ class QuestService:
         self._round_service = round_service
         self._comm_service = comm_service
 
+    # todo: add docstring
     def on_enter_quest_voting_state(self, game_id: str) -> None:
         """
         On enter broadcast quest voting started by team members, and notify team members to cast vote
@@ -37,6 +38,7 @@ class QuestService:
                                            int(datetime.now().timestamp()))
         self._comm_service.broadcast(event, team_member_ids)
 
+    # todo: add docstring
     def handle_quest_vote_cast(self, event: Event) -> None:
         """
         On event saves vote and broadcast player X has voted
@@ -76,17 +78,20 @@ class QuestService:
         if not quest or quest.result:
             raise ValueError(f"Quest not exist or completed {quest}")
 
+    # todo: add docstring
     def is_quest_vote_completed(self, game_id: str, quest_number: int) -> bool:
         quest = self._repository.get_quest(game_id, quest_number)
         quest_votes = self._repository.get_quest_votes(game_id, quest_number)
         return len(quest_votes) == len(quest.team_member_ids)
 
+    # todo: add docstring
     def is_quest_passed(self, game_id: str, quest_number: int) -> bool:
         quest_votes = self._repository.get_quest_votes(game_id, quest_number)
         disapprove_votes = [qv for qv in quest_votes if not qv.is_approved]
 
         return len(disapprove_votes) <= (0 if quest_number != 4 else 1)
 
+    # todo: add docstring
     def has_majority(self, game_id: str) -> bool:
         """
         If any team has won 3 out of 5 missions
@@ -98,6 +103,7 @@ class QuestService:
         failed_quests = [q for q in quests if q.result == VotingResult.Failed]
         return len(passed_quests) >= 3 or len(failed_quests) >= 3
 
+    # todo: add docstring
     def handle_on_enter_team_selection_state(self, game_id: str) -> None:
         current_quest = self._get_last_quest(game_id)
         if self._is_create_quest(current_quest):
@@ -149,11 +155,13 @@ class QuestService:
         self._repository.put_game(game)
         return next_leader_id
 
+    # todo: add docstring
     def set_team_member_ids(self, game_id: str, quest_number: int, team_member_ids: list[str]) -> None:
         quest = self._repository.get_quest(game_id, quest_number)
         quest.team_member_ids = team_member_ids
         self._repository.update_quest(quest)
 
+    # todo: add docstring
     def set_quest_result(self, game_id: str, quest_number: int, result: VotingResult) -> Quest:
         quest = self._repository.get_quest(game_id, quest_number)
         quest.result = result

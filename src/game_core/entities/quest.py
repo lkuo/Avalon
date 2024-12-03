@@ -3,7 +3,7 @@ from typing import Optional
 
 from game_core.constants.voting_result import VotingResult
 
-
+# todo: add game id field
 @dataclass
 class Quest:
     id: str

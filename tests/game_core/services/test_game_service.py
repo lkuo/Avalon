@@ -63,7 +63,7 @@ def test_handle_game_started(mocker, game_service, repository, player_service, c
         villager_player2
     ]
     player_service.assign_roles.return_value = players
-    player_service.get_players.return_value = players
+    repository.get_players.return_value = players
     events = [
         _get_player_event(game_id, merlin_player.id, Role.Merlin, [mordred_player]),
         _get_player_event(game_id, mordred_player.id, Role.Mordred, [merlin_player]),
@@ -138,7 +138,7 @@ def test_handle_game_started_with_invalid_player_ids(mocker, game_service, playe
     game.status = GameStatus.NotStarted
     repository.get_game.return_value = game
     players = [Player("player1", "player1", "secret1", Role.Merlin)]
-    player_service.get_players.return_value = players
+    repository.get_players.return_value = players
     player_service.assign_roles.return_value = players
 
     # When

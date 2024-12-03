@@ -24,6 +24,7 @@ class QuestVotingState(State):
         if event.type != EventType.QUEST_VOTE_CAST:
             raise ValueError(f"QuestVotingState expects only {EventType.QUEST_VOTE_CAST.value}, got {event.type.value}")
 
+        # todo: handle the updating quest result in the quest service
         self._quest_service.handle_quest_vote_cast(event)
         quest_number = event.payload.get("quest_number")
         if not self._quest_service.is_quest_vote_completed(event.game_id, quest_number):
@@ -36,5 +37,6 @@ class QuestVotingState(State):
         else:
             return self._team_selection_state
 
+    # todo: fix the logic, no need to announce the quest voting started every time a vote is cast
     def on_enter(self, game_id: str) -> None:
         self._quest_service.on_enter_quest_voting_state(game_id)

@@ -14,9 +14,6 @@ class RoundService:
         self._repository = repository
         self._comm_service = comm_service
 
-    def start_round(self, game_id: str) -> None:
-        ...
-
     def handle_team_proposal_submitted(self, event: Event) -> None:
         """
         Validates the team proposal which the leader submitted. Saves the proposal then broadcast the event.
