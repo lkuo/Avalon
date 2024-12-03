@@ -364,3 +364,31 @@ def test_is_game_finished(mocker, game_service, repository, game_status, result)
 
     # Then
     assert res == result
+
+
+def test_handle_game_ended(mocker, game_service, repository, comm_service):
+    # Given
+    game_id = "game_id"
+    game = mocker.MagicMock(spec=Game)
+    repository.get_game.return_value = game
+    players = [
+        Player("player1", "player1", "secret1", Role.Merlin),
+        Player("player2", "player2", "secret2", Role.Mordred),
+        Player("player3", "player3", "secret3", Role.Assassin),
+    ]
+    repository.get_players.return_value = players
+    game_ended_event = mocker.MagicMock(spec=Event)
+    repository.put_event.return_value = game_ended_event
+    timestamp = 1234567890
+    mock_datetime = mocker.patch("game_core.services.game_service.datetime")
+    mock_datetime.now.return_value.timestamp.return_value = timestamp
+
+    # When
+    game_service.handle_game_ended(game_id)
+
+    # Then
+    game.status = GameStatus.Finished
+    repository.update_game.assert_called_once_with(game)
+    payload = {"player_roles": {player.id: player.role.value for player in players}}
+    repository.put_event.assert_called_once_with(game_id, EventType.GAME_ENDED.value, [], payload, timestamp)
+    comm_service.broadcast.assert_called_once_with(game_ended_event)
