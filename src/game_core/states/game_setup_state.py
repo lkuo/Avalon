@@ -19,10 +19,10 @@ class GameSetupState(State):
         self._team_selection_state = team_selection_state
 
     def handle(self, event: Event) -> State:
-        if event.type not in [EventType.GAME_STARTED, EventType.PLAYER_JOINED]:
+        if event.type not in [EventType.GameStarted, EventType.PlayerJoined]:
             raise ValueError(f"GameSetupState expects GAME_STARTED or PLAYER_JOINED event, got {event.type.value}")
 
-        if event.type == EventType.PLAYER_JOINED:
+        if event.type == EventType.PlayerJoined:
             self._player_service.handle_player_joined(event)
             return self
 

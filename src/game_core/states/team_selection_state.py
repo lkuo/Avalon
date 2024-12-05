@@ -20,7 +20,7 @@ class TeamSelectionState(State):
         self._round_service = round_service
 
     def handle(self, event: Event) -> State:
-        if event.type != EventType.TEAM_PROPOSAL_SUBMITTED:
+        if event.type != EventType.TeamProposalSubmitted:
             raise ValueError(f"TeamSelectionState expects only TEAM_PROPOSAL_SUBMITTED, got {event.type.value}")
 
         self._round_service.handle_team_proposal_submitted(event)

@@ -24,8 +24,8 @@ class RoundVotingState(State):
         self._quest_service = quest_service
 
     def handle(self, event: Event) -> State:
-        if event.type != EventType.ROUND_VOTE_CAST:
-            raise ValueError(f"RoundVotingState expects only {EventType.ROUND_VOTE_CAST.value}, got {event.type.value}")
+        if event.type != EventType.RoundVoteCast:
+            raise ValueError(f"RoundVotingState expects only {EventType.RoundVoteCast.value}, got {event.type.value}")
 
         # update round if round vote is completed
         # update quest team members if round proposal is passed

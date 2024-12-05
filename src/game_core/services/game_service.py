@@ -62,11 +62,11 @@ class GameService:
             raise ValueError(f"Game {game_id} has {len(assassins)} assassins, expected 1")
         assassin = assassins[0]
         assassination_target_requested_event = self._repository.put_event(game_id,
-                                                                          EventType.ASSASSINATION_TARGET_REQUESTED.value,
+                                                                          EventType.AssassinationTargetRequested.value,
                                                                           [assassin.id], {},
                                                                           int(datetime.now().timestamp()))
         self._comm_service.notify(assassin.id, assassination_target_requested_event)
-        assassination_started_event = self._repository.put_event(game_id, EventType.ASSASSINATION_STARTED.value, [], {},
+        assassination_started_event = self._repository.put_event(game_id, EventType.AssassinationStarted.value, [], {},
                                                                  int(datetime.now().timestamp()))
         self._comm_service.broadcast(assassination_started_event)
 
@@ -83,14 +83,14 @@ class GameService:
         self._repository.update_game(game)
         if target.role == Role.Merlin:
             assassination_succeeded_event = self._repository.put_event(event.game_id,
-                                                                       EventType.ASSASSINATION_SUCCEEDED.value, [], {},
+                                                                       EventType.AssassinationSucceeded.value, [], {},
                                                                        int(datetime.now().timestamp()))
             self._comm_service.broadcast(assassination_succeeded_event)
             self.handle_game_ended(event.game_id)
             return
 
         payload = {"target_id": target.id, "role": target.role.value}
-        assassination_failed_event = self._repository.put_event(event.game_id, EventType.ASSASSINATION_FAILED.value, [],
+        assassination_failed_event = self._repository.put_event(event.game_id, EventType.AssassinationFailed.value, [],
                                                                 payload,
                                                                 int(datetime.now().timestamp()))
         self._comm_service.broadcast(assassination_failed_event)
@@ -103,7 +103,7 @@ class GameService:
         players = self._repository.get_players(game_id)
         player_roles = {player.id: player.role.value for player in players}
         payload = {"player_roles": player_roles}
-        game_ended_event = self._repository.put_event(game_id, EventType.GAME_ENDED.value, [], payload,
+        game_ended_event = self._repository.put_event(game_id, EventType.GameEnded.value, [], payload,
                                                       int(datetime.now().timestamp()))
         self._comm_service.broadcast(game_ended_event)
 
@@ -138,7 +138,7 @@ def _get_player_event(game_id, players) -> dict[str: Event]:
         }
         events[player.id] = Event(
             game_id=game_id,
-            type=EventType.GAME_STARTED,
+            type=EventType.GameStarted,
             recipients=[player.id],
             payload=payload,
         )

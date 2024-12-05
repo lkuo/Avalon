@@ -21,8 +21,8 @@ class QuestVotingState(State):
         self._quest_service = quest_service
 
     def handle(self, event: Event) -> State:
-        if event.type != EventType.QUEST_VOTE_CAST:
-            raise ValueError(f"QuestVotingState expects only {EventType.QUEST_VOTE_CAST.value}, got {event.type.value}")
+        if event.type != EventType.QuestVoteCast:
+            raise ValueError(f"QuestVotingState expects only {EventType.QuestVoteCast.value}, got {event.type.value}")
 
         # todo: handle the updating quest result in the quest service
         self._quest_service.handle_quest_vote_cast(event)

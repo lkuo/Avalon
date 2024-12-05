@@ -31,10 +31,10 @@ class QuestService:
             "quest_number": quest.quest_number,
             "team_member_ids": team_member_ids
         }
-        event = self._repository.put_event(game_id, EventType.QUEST_VOTING_STARTED.value, [], payload,
+        event = self._repository.put_event(game_id, EventType.QuestVoteStarted.value, [], payload,
                                            int(datetime.now().timestamp()))
         self._comm_service.broadcast(event)
-        event = self._repository.put_event(game_id, EventType.QUEST_VOTE_REQUESTED.value, team_member_ids, {},
+        event = self._repository.put_event(game_id, EventType.QuestVoteRequested.value, team_member_ids, {},
                                            int(datetime.now().timestamp()))
         self._comm_service.broadcast(event, team_member_ids)
 
@@ -56,7 +56,7 @@ class QuestService:
             "player_id": player_id,
             "quest_number": quest_number
         }
-        quest_vote_cast_event = self._repository.put_event(game_id, EventType.QUEST_VOTE_CAST.value, [],
+        quest_vote_cast_event = self._repository.put_event(game_id, EventType.QuestVoteCast.value, [],
                                                            quest_vote_cast_event_payload,
                                                            int(datetime.now().timestamp()))
         self._comm_service.broadcast(quest_vote_cast_event)
@@ -129,7 +129,7 @@ class QuestService:
             "game_id": game_id,
             "quest_number": quest_number,
         }
-        return self._repository.put_event(game_id, EventType.QUEST_STARTED.value, [], payload,
+        return self._repository.put_event(game_id, EventType.QuestStarted.value, [], payload,
                                           int(datetime.now().timestamp()))
 
     def _get_last_quest(self, game_id) -> Optional[Quest]:
@@ -166,7 +166,7 @@ class QuestService:
         quest = self._repository.get_quest(game_id, quest_number)
         quest.result = result
         updated_quest = self._repository.update_quest(quest)
-        event = self._repository.put_event(game_id, EventType.QUEST_COMPLETED.value, [],
+        event = self._repository.put_event(game_id, EventType.QuestCompleted.value, [],
                                            {"quest_number": quest_number, "result": result.value},
                                            int(datetime.now().timestamp()))
         self._comm_service.broadcast(event)

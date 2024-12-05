@@ -33,7 +33,7 @@ class RoundService:
         game_round = self._repository.get_round(game_id, quest_number, round_number)
         game_round.team_member_ids = team_member_ids
         self._repository.update_round(game_round)
-        event = self._repository.put_event(game_id, EventType.TEAM_PROPOSAL_SUBMITTED.value, [],
+        event = self._repository.put_event(game_id, EventType.TeamProposalSubmitted.value, [],
                                            payload, int(datetime.now().timestamp()))
         self._comm_service.broadcast(event)
 
@@ -78,7 +78,7 @@ class RoundService:
             "quest_number": quest_number,
             "round_number": round_number
         }
-        round_vote_cast_event = Event(event.game_id, EventType.ROUND_VOTE_CAST.value, [], round_vote_cast_event_payload)
+        round_vote_cast_event = Event(event.game_id, EventType.RoundVoteCast.value, [], round_vote_cast_event_payload)
         self._comm_service.broadcast(round_vote_cast_event)
 
     def _validate_round_vote_cast_event(self, event):
@@ -123,14 +123,14 @@ class RoundService:
         rounds = sorted(rounds, key=lambda r: r.round_number)
         round_number = 1 if not rounds else rounds[-1].round_number + 1
         current_round = self._repository.put_round(game_id, quest_number, round_number, leader_id)
-        event = self._repository.put_event(game_id, EventType.ROUND_STARTED.value, [],
+        event = self._repository.put_event(game_id, EventType.RoundStarted.value, [],
                                            {"quest_number": quest_number, "round_number": round_number,
                                             "leader_id": leader_id},
                                            int(datetime.now().timestamp()))
         self._comm_service.broadcast(event)
         game = self._repository.get_game(game_id)
         number_of_players = game.config.quest_team_size[quest_number]
-        select_team_event = self._repository.put_event(game_id, EventType.SELECT_TEAM.value, [leader_id],
+        select_team_event = self._repository.put_event(game_id, EventType.SelectTeam.value, [leader_id],
                                                        {"quest_number": quest_number, "round_number": round_number,
                                                         "number_of_players": number_of_players},
                                                        int(datetime.now().timestamp()))
@@ -144,7 +144,7 @@ class RoundService:
 
         round_votes = self._repository.get_round_votes(game_id, quest_number, round_number)
         votes = {rv.player_id: rv.is_approved for rv in round_votes}
-        event = self._repository.put_event(game_id, EventType.ROUND_COMPLETED.value, [],
+        event = self._repository.put_event(game_id, EventType.RoundCompleted.value, [],
                                            {"quest_number": quest_number, "round_number": round_number,
                                             "result": result.value, "votes": votes},
                                            int(datetime.now().timestamp()))

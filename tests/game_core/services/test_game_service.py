@@ -73,7 +73,7 @@ def test_handle_game_started(mocker, game_service, repository, player_service, c
     ]
     player_ids = [p.id for p in players]
     random.shuffle(player_ids)
-    game_started_event = Event(game_id, EventType.GAME_STARTED, [], {"player_ids": player_ids})
+    game_started_event = Event(game_id, EventType.GameStarted, [], {"player_ids": player_ids})
 
     # When
     game_service.handle_game_started(game_started_event)
@@ -93,7 +93,7 @@ def test_handle_game_started_with_game_already_started(mocker, game_service, pla
                                                        game_status):
     # Given
     game_id = "game_id"
-    event = Event(game_id, EventType.GAME_STARTED, [], mocker.MagicMock())
+    event = Event(game_id, EventType.GameStarted, [], mocker.MagicMock())
     game = mocker.MagicMock()
     game.status = game_status
     repository.get_game.return_value = game
@@ -113,7 +113,7 @@ def test_handle_game_started_with_game_already_started(mocker, game_service, pla
 def test_handle_game_started_with_game_not_exists(mocker, game_service, player_service, repository, comm_service):
     # Given
     game_id = "game_id"
-    event = Event(game_id, EventType.GAME_STARTED, [], mocker.MagicMock())
+    event = Event(game_id, EventType.GameStarted, [], mocker.MagicMock())
     repository.get_game.return_value = None
 
     # When
@@ -133,7 +133,7 @@ def test_handle_game_started_with_invalid_player_ids(mocker, game_service, playe
                                                      player_ids):
     # Given
     game_id = "game_id"
-    event = Event(game_id, EventType.GAME_STARTED, [], {"player_ids": player_ids})
+    event = Event(game_id, EventType.GameStarted, [], {"player_ids": player_ids})
     game = mocker.MagicMock()
     game.status = GameStatus.NotStarted
     repository.get_game.return_value = game
@@ -155,7 +155,7 @@ def test_handle_game_started_with_invalid_player_ids(mocker, game_service, playe
 def _get_player_event(game_id, player_id, role, known_players) -> Event:
     return Event(
         game_id,
-        EventType.GAME_STARTED,
+        EventType.GameStarted,
         [player_id],
         {
             "role": role.value,
@@ -233,8 +233,8 @@ def test_on_enter_end_game_state(mocker, game_service, repository, comm_service)
 
     # Then
     repository.put_event.assert_has_calls([
-        call(game_id, EventType.ASSASSINATION_TARGET_REQUESTED.value, [assassin_id], {}, timestamp),
-        call(game_id, EventType.ASSASSINATION_STARTED.value, [], {}, timestamp),
+        call(game_id, EventType.AssassinationTargetRequested.value, [assassin_id], {}, timestamp),
+        call(game_id, EventType.AssassinationStarted.value, [], {}, timestamp),
     ])
     comm_service.notify.assert_called_once_with(assassin_id, assassination_target_requested_event)
     comm_service.broadcast.assert_called_once_with(assassination_started_event)
@@ -269,7 +269,7 @@ def test_handle_assassination_target_submitted_failed(mocker, game_service, repo
     # Then
     game.assassination_attempts = GAME_ASSASSINATION_ATTEMPTS - 1
     repository.update_game.assert_called_once_with(game)
-    repository.put_event.assert_called_once_with(game_id, EventType.ASSASSINATION_FAILED.value, [], {
+    repository.put_event.assert_called_once_with(game_id, EventType.AssassinationFailed.value, [], {
         "target_id": target_id,
         "role": player.role.value
     }, timestamp)
@@ -306,7 +306,7 @@ def test_handle_assassination_target_submitted_succeeded(mocker, game_service, r
     # Then
     game.assassination_attempts = GAME_ASSASSINATION_ATTEMPTS - 1
     repository.update_game.assert_called_once_with(game)
-    repository.put_event.assert_called_once_with(game_id, EventType.ASSASSINATION_SUCCEEDED.value, [], {}, timestamp)
+    repository.put_event.assert_called_once_with(game_id, EventType.AssassinationSucceeded.value, [], {}, timestamp)
     comm_service.broadcast.assert_called_once_with(assassination_succeeded_event)
     game_service.handle_game_ended.assert_called_once_with(game_id)
 
@@ -390,5 +390,5 @@ def test_handle_game_ended(mocker, game_service, repository, comm_service):
     game.status = GameStatus.Finished
     repository.update_game.assert_called_once_with(game)
     payload = {"player_roles": {player.id: player.role.value for player in players}}
-    repository.put_event.assert_called_once_with(game_id, EventType.GAME_ENDED.value, [], payload, timestamp)
+    repository.put_event.assert_called_once_with(game_id, EventType.GameEnded.value, [], payload, timestamp)
     comm_service.broadcast.assert_called_once_with(game_ended_event)

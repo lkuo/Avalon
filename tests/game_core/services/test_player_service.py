@@ -36,7 +36,7 @@ def test_handle_player_joined(mocker, comm_service, repository, player_service):
     mock_uuid = mocker.patch('game_core.services.player_service.uuid')
     mock_uuid.uuid4.return_value = secret
     timestamp = 12345
-    event_type = EventType.PLAYER_JOINED
+    event_type = EventType.PlayerJoined
     event = Event(game_id, event_type, [], {"player_name": name}, timestamp)
     player = Player(player_id, name, secret)
     repository.put_player.return_value = player
@@ -57,7 +57,7 @@ def test_handle_player_joined(mocker, comm_service, repository, player_service):
 def test_handle_player_joined_with_invalid_payload(comm_service, repository, player_service, payload):
     # Given
     game_id = "game_id"
-    event_type = EventType.PLAYER_JOINED
+    event_type = EventType.PlayerJoined
     timestamp = 12345
     event = Event(game_id, event_type, [], payload, timestamp)
 
