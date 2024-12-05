@@ -1,6 +1,6 @@
 import pytest
 
-from game_core.constants.voting_result import VotingResult
+from game_core.constants.voting_result import VoteResult
 from game_core.entities.event import Event
 from game_core.constants.event_type import EventType
 from game_core.services.quest_service import QuestService
@@ -48,7 +48,7 @@ def test_quest_voting_state_when_quest_not_voted(team_selection_state, end_game_
     quest_service.has_majority.assert_not_called()
 
 
-@pytest.mark.parametrize("is_quest_passed, voting_result", [(True, VotingResult.Passed), (False, VotingResult.Failed)])
+@pytest.mark.parametrize("is_quest_passed, voting_result", [(True, VoteResult.Passed), (False, VoteResult.Failed)])
 def test_quest_voting_state_when_quests_completed(team_selection_state, end_game_state, quest_service, event,
                                                   is_quest_passed, voting_result):
     # Given

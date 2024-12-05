@@ -1,4 +1,4 @@
-from game_core.constants.voting_result import VotingResult
+from game_core.constants.voting_result import VoteResult
 from game_core.entities.event import Event
 from game_core.constants.event_type import EventType
 from game_core.services.quest_service import QuestService
@@ -31,8 +31,8 @@ class QuestVotingState(State):
             return self
 
         # move this to handle_quest_vote_cast method
-        voting_result = VotingResult.Passed if self._quest_service.is_quest_passed(
-            event.game_id, quest_number) else VotingResult.Failed
+        voting_result = VoteResult.Passed if self._quest_service.is_quest_passed(
+            event.game_id, quest_number) else VoteResult.Failed
         self._quest_service.set_quest_result(event.game_id, quest_number, voting_result)
         if self._quest_service.has_majority(event.game_id):
             return self._end_game_state

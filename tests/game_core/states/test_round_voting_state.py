@@ -1,6 +1,6 @@
 import pytest
 
-from game_core.constants.voting_result import VotingResult
+from game_core.constants.voting_result import VoteResult
 from game_core.entities.event import Event
 from game_core.constants.event_type import EventType
 from game_core.entities.round import Round
@@ -67,7 +67,7 @@ def test_round_voting_state_when_proposal_passed(mocker, team_selection_state, q
     round_service.is_proposal_passed.return_value = True
     game_round = mocker.MagicMock(spec=Round)
     team_member_ids = ["team_member_id_1", "team_member_id_2"]
-    game_round.result = VotingResult.Passed
+    game_round.result = VoteResult.Passed
     game_round.team_member_ids = team_member_ids
     round_service.set_round_result.return_value = game_round
 
@@ -81,7 +81,7 @@ def test_round_voting_state_when_proposal_passed(mocker, team_selection_state, q
     round_service.is_round_vote_completed.assert_called_once_with(event.game_id, QUEST_NUMBER, ROUND_NUMBER)
     round_service.is_proposal_passed.assert_called_once_with(event.game_id, QUEST_NUMBER, ROUND_NUMBER)
     round_service.set_round_result.assert_called_once_with(event.game_id, QUEST_NUMBER, ROUND_NUMBER,
-                                                           VotingResult.Passed)
+                                                           VoteResult.Passed)
     quest_service.set_team_member_ids.assert_called_once_with(event.game_id, QUEST_NUMBER, team_member_ids)
 
 
@@ -92,7 +92,7 @@ def test_round_voting_state_when_proposal_rejected(mocker, team_selection_state,
     round_service.is_round_vote_completed.return_value = True
     round_service.is_proposal_passed.return_value = False
     game_round = mocker.MagicMock(spec=Round)
-    game_round.result = VotingResult.Failed
+    game_round.result = VoteResult.Failed
     round_service.set_round_result.return_value = game_round
 
     # When
@@ -105,7 +105,7 @@ def test_round_voting_state_when_proposal_rejected(mocker, team_selection_state,
     round_service.is_round_vote_completed.assert_called_once_with(event.game_id, QUEST_NUMBER, ROUND_NUMBER)
     round_service.is_proposal_passed.assert_called_once_with(event.game_id, QUEST_NUMBER, ROUND_NUMBER)
     round_service.set_round_result.assert_called_once_with(event.game_id, QUEST_NUMBER, ROUND_NUMBER,
-                                                           VotingResult.Failed)
+                                                           VoteResult.Failed)
 
 
 def test_round_voting_state_with_invalid_event_type(team_selection_state, quest_voting_state, round_service,

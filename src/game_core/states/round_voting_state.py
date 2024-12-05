@@ -1,4 +1,4 @@
-from game_core.constants.voting_result import VotingResult
+from game_core.constants.voting_result import VoteResult
 from game_core.entities.event import Event
 from game_core.constants.event_type import EventType
 from game_core.services.quest_service import QuestService
@@ -39,9 +39,9 @@ class RoundVotingState(State):
             return self
 
         result = self._round_service.is_proposal_passed(game_id, quest_number, round_number)
-        voting_result = VotingResult.Passed if result else VotingResult.Failed
+        voting_result = VoteResult.Passed if result else VoteResult.Failed
         game_round = self._round_service.set_round_result(game_id, quest_number, round_number, voting_result)
-        if game_round.result == VotingResult.Passed:
+        if game_round.result == VoteResult.Passed:
             self._quest_service.set_team_member_ids(game_id, quest_number, game_round.team_member_ids)
             return self._quest_voting_state
         else:

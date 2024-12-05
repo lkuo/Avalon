@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional
 
 from game_core.constants.event_type import EventType
-from game_core.constants.voting_result import VotingResult
+from game_core.constants.voting_result import VoteResult
 from game_core.entities.event import Event
 from game_core.entities.quest import Quest
 from game_core.repository import Repository
@@ -99,8 +99,8 @@ class QuestService:
         :return:
         """
         quests = self._repository.get_quests(game_id)
-        passed_quests = [q for q in quests if q.result == VotingResult.Passed]
-        failed_quests = [q for q in quests if q.result == VotingResult.Failed]
+        passed_quests = [q for q in quests if q.result == VoteResult.Passed]
+        failed_quests = [q for q in quests if q.result == VoteResult.Failed]
         return len(passed_quests) >= 3 or len(failed_quests) >= 3
 
     # todo: add docstring, move comm_service broadcast to this method
@@ -162,7 +162,7 @@ class QuestService:
         self._repository.update_quest(quest)
 
     # todo: add docstring
-    def set_quest_result(self, game_id: str, quest_number: int, result: VotingResult) -> Quest:
+    def set_quest_result(self, game_id: str, quest_number: int, result: VoteResult) -> Quest:
         quest = self._repository.get_quest(game_id, quest_number)
         quest.result = result
         updated_quest = self._repository.update_quest(quest)

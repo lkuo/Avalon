@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from game_core.constants.event_type import EventType
-from game_core.constants.voting_result import VotingResult
+from game_core.constants.voting_result import VoteResult
 from game_core.entities.event import Event
 from game_core.entities.round import Round
 from game_core.repository import Repository
@@ -137,7 +137,7 @@ class RoundService:
         self._comm_service.notify(leader_id, select_team_event)
         return current_round
 
-    def set_round_result(self, game_id: str, quest_number: int, round_number: int, result: VotingResult) -> Round:
+    def set_round_result(self, game_id: str, quest_number: int, round_number: int, result: VoteResult) -> Round:
         game_round = self._repository.get_round(game_id, quest_number, round_number)
         game_round.result = result
         updated_game_round = self._repository.update_round(game_round)

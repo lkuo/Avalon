@@ -3,7 +3,7 @@ from unittest.mock import ANY, call
 import pytest
 
 from game_core.constants.event_type import EventType
-from game_core.constants.voting_result import VotingResult
+from game_core.constants.voting_result import VoteResult
 from game_core.entities.event import Event
 from game_core.entities.quest import Quest
 from game_core.repository import Repository
@@ -33,7 +33,7 @@ def quest_service(repository, round_service, comm_service):
 
 
 @pytest.mark.parametrize("quests", [
-    [Quest("quest_id1", 1, result=VotingResult.Passed), Quest("quest_id2", 2, result=VotingResult.Failed)], []])
+    [Quest("quest_id1", 1, result=VoteResult.Passed), Quest("quest_id2", 2, result=VoteResult.Failed)], []])
 def test_handle_on_enter_team_selection_state_create_quest(mocker, quest_service, repository, round_service,
                                                            comm_service, quests):
     # Given
@@ -73,7 +73,7 @@ def test_handle_on_enter_team_selection_state_no_create_quest(mocker, quest_serv
                                                               comm_service):
     # Given
     game_id = "game_id"
-    quests = [Quest("quest_id1", 1, result=VotingResult.Passed), Quest("quest_id2", 2)]
+    quests = [Quest("quest_id1", 1, result=VoteResult.Passed), Quest("quest_id2", 2)]
     repository.get_quests.return_value = quests
     player_ids = ["player_id1", "player_id2", "player_id3"]
     leader_id = player_ids[1]
@@ -104,7 +104,7 @@ def test_handle_on_enter_team_selection_state_rotate_leader(mocker, quest_servic
                                                             current_leader_id, next_leader_id):
     # Given
     game_id = "game_id"
-    quests = [Quest("quest_id1", 1, result=VotingResult.Passed), Quest("quest_id2", 2)]
+    quests = [Quest("quest_id1", 1, result=VoteResult.Passed), Quest("quest_id2", 2)]
     repository.get_quests.return_value = quests
     player_ids = ["player_id1", "player_id2", "player_id3"]
     leader_id = player_ids[current_leader_id]
@@ -257,7 +257,7 @@ def test_handle_quest_vote_cast_with_invalid_quest(mocker, quest_service, reposi
     player = mocker.MagicMock()
     repository.get_player.return_value = player
     quest = mocker.MagicMock()
-    quest.result = VotingResult.Passed
+    quest.result = VoteResult.Passed
     repository.get_quest.return_value = quest
 
     # When
@@ -310,7 +310,7 @@ def test_set_quest_result(mocker, quest_service, repository, comm_service):
     # Given
     game_id = "game_id"
     quest_number = 1
-    result = VotingResult.Passed
+    result = VoteResult.Passed
     quest = mocker.MagicMock(spec=Quest)
     repository.get_quest.return_value = quest
     repository.update_quest.side_effect = lambda q: q
@@ -341,7 +341,7 @@ def test_has_majority(mocker, quest_service, repository, votes, result):
     quests = []
     for vote in votes:
         quest = mocker.MagicMock(spec=Quest)
-        quest.result = VotingResult.Passed if vote else VotingResult.Failed
+        quest.result = VoteResult.Passed if vote else VoteResult.Failed
         quests.append(quest)
     repository.get_quests.return_value = quests
 

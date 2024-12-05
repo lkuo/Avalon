@@ -2,6 +2,6 @@ from enum import Enum
 
 
 # todo: rename this to VoteResult
-class VotingResult(Enum):
+class VoteResult(Enum):
     Passed = "Passed"
     Failed = "Failed"

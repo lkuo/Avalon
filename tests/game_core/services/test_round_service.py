@@ -3,7 +3,7 @@ from unittest.mock import call
 import pytest
 
 from game_core.constants.event_type import EventType
-from game_core.constants.voting_result import VotingResult
+from game_core.constants.voting_result import VoteResult
 from game_core.entities.event import Event
 from game_core.entities.game import GameConfig
 from game_core.entities.player import Player
@@ -282,7 +282,7 @@ def test_set_round_result(mocker, round_service, repository, comm_service):
     game_id = "game_id"
     quest_number = 3
     round_number = 4
-    result = VotingResult.Passed
+    result = VoteResult.Passed
     game_round = mocker.MagicMock(spec=Round)
     repository.get_round.return_value = game_round
     updated_game_round = mocker.MagicMock(spec=Round)

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from game_core.constants.voting_result import VotingResult
+from game_core.constants.voting_result import VoteResult
 
 # todo: add game id field
 @dataclass
@@ -11,4 +11,4 @@ class Round:
     round_number: int
     leader_id: str
     team_member_ids: Optional[list[str]]
-    result: Optional[VotingResult] = None
+    result: Optional[VoteResult] = None
