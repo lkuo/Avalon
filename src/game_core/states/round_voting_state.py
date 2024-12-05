@@ -39,9 +39,9 @@ class RoundVotingState(State):
             return self
 
         result = self._round_service.is_proposal_passed(game_id, quest_number, round_number)
-        voting_result = VoteResult.Passed if result else VoteResult.Failed
+        voting_result = VoteResult.Approved if result else VoteResult.Rejected
         game_round = self._round_service.set_round_result(game_id, quest_number, round_number, voting_result)
-        if game_round.result == VoteResult.Passed:
+        if game_round.result == VoteResult.Approved:
             self._quest_service.set_team_member_ids(game_id, quest_number, game_round.team_member_ids)
             return self._quest_voting_state
         else:

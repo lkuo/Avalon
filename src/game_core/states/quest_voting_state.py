@@ -31,8 +31,8 @@ class QuestVotingState(State):
             return self
 
         # move this to handle_quest_vote_cast method
-        voting_result = VoteResult.Passed if self._quest_service.is_quest_passed(
-            event.game_id, quest_number) else VoteResult.Failed
+        voting_result = VoteResult.Approved if self._quest_service.is_quest_passed(
+            event.game_id, quest_number) else VoteResult.Rejected
         self._quest_service.set_quest_result(event.game_id, quest_number, voting_result)
         if self._quest_service.has_majority(event.game_id):
             return self._end_game_state

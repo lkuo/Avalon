@@ -33,8 +33,8 @@ def quest_service(repository, round_service, comm_service):
 
 
 @pytest.mark.parametrize("quests", [
-    [Quest("quest_id1", "game_id", 1, result=VoteResult.Passed),
-     Quest("quest_id2", "game_id", 2, result=VoteResult.Failed)], []])
+    [Quest("quest_id1", "game_id", 1, result=VoteResult.Approved),
+     Quest("quest_id2", "game_id", 2, result=VoteResult.Rejected)], []])
 def test_handle_on_enter_team_selection_state_create_quest(mocker, quest_service, repository, round_service,
                                                            comm_service, quests):
     # Given
@@ -74,7 +74,7 @@ def test_handle_on_enter_team_selection_state_no_create_quest(mocker, quest_serv
                                                               comm_service):
     # Given
     game_id = "game_id"
-    quests = [Quest("quest_id1", "game_id", 1, result=VoteResult.Passed), Quest("quest_id2", "game_id", 2)]
+    quests = [Quest("quest_id1", "game_id", 1, result=VoteResult.Approved), Quest("quest_id2", "game_id", 2)]
     repository.get_quests.return_value = quests
     player_ids = ["player_id1", "player_id2", "player_id3"]
     leader_id = player_ids[1]
@@ -105,7 +105,7 @@ def test_handle_on_enter_team_selection_state_rotate_leader(mocker, quest_servic
                                                             current_leader_id, next_leader_id):
     # Given
     game_id = "game_id"
-    quests = [Quest("quest_id1", "game_id", 1, result=VoteResult.Passed), Quest("quest_id2", "game_id", 2)]
+    quests = [Quest("quest_id1", "game_id", 1, result=VoteResult.Approved), Quest("quest_id2", "game_id", 2)]
     repository.get_quests.return_value = quests
     player_ids = ["player_id1", "player_id2", "player_id3"]
     leader_id = player_ids[current_leader_id]
@@ -258,7 +258,7 @@ def test_handle_quest_vote_cast_with_invalid_quest(mocker, quest_service, reposi
     player = mocker.MagicMock()
     repository.get_player.return_value = player
     quest = mocker.MagicMock()
-    quest.result = VoteResult.Passed
+    quest.result = VoteResult.Approved
     repository.get_quest.return_value = quest
 
     # When
@@ -296,7 +296,7 @@ def test_is_quest_passed(mocker, quest_service, repository, votes, quest_number,
     quest_votes = []
     for vote in votes:
         quest_vote = mocker.MagicMock()
-        quest_vote.is_approved = vote
+        quest_vote.result = vote
         quest_votes.append(quest_vote)
     repository.get_quest_votes.return_value = quest_votes
 
@@ -311,7 +311,7 @@ def test_set_quest_result(mocker, quest_service, repository, comm_service):
     # Given
     game_id = "game_id"
     quest_number = 1
-    result = VoteResult.Passed
+    result = VoteResult.Approved
     quest = mocker.MagicMock(spec=Quest)
     repository.get_quest.return_value = quest
     repository.update_quest.side_effect = lambda q: q
@@ -342,7 +342,7 @@ def test_has_majority(mocker, quest_service, repository, votes, result):
     quests = []
     for vote in votes:
         quest = mocker.MagicMock(spec=Quest)
-        quest.result = VoteResult.Passed if vote else VoteResult.Failed
+        quest.result = VoteResult.Approved if vote else VoteResult.Rejected
         quests.append(quest)
     repository.get_quests.return_value = quests
 

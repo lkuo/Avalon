@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+
 # todo: add game id field
 @dataclass
 class RoundVote:

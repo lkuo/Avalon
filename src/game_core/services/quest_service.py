@@ -87,7 +87,7 @@ class QuestService:
     # todo: add docstring
     def is_quest_passed(self, game_id: str, quest_number: int) -> bool:
         quest_votes = self._repository.get_quest_votes(game_id, quest_number)
-        disapprove_votes = [qv for qv in quest_votes if not qv.is_approved]
+        disapprove_votes = [qv for qv in quest_votes if not qv.result]
 
         return len(disapprove_votes) <= (0 if quest_number != 4 else 1)
 
@@ -99,8 +99,8 @@ class QuestService:
         :return:
         """
         quests = self._repository.get_quests(game_id)
-        passed_quests = [q for q in quests if q.result == VoteResult.Passed]
-        failed_quests = [q for q in quests if q.result == VoteResult.Failed]
+        passed_quests = [q for q in quests if q.result == VoteResult.Approved]
+        failed_quests = [q for q in quests if q.result == VoteResult.Rejected]
         return len(passed_quests) >= 3 or len(failed_quests) >= 3
 
     # todo: add docstring, move comm_service broadcast to this method

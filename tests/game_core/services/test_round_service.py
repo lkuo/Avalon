@@ -282,7 +282,7 @@ def test_set_round_result(mocker, round_service, repository, comm_service):
     game_id = "game_id"
     quest_number = 3
     round_number = 4
-    result = VoteResult.Passed
+    result = VoteResult.Approved
     game_round = mocker.MagicMock(spec=Round)
     repository.get_round.return_value = game_round
     updated_game_round = mocker.MagicMock(spec=Round)
