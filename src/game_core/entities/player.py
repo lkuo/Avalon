@@ -4,7 +4,6 @@ from typing import Optional
 from game_core.constants.role import Role
 
 
-# todo: add game id field
 @dataclass
 class Player:
     id: str

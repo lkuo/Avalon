@@ -33,7 +33,8 @@ def quest_service(repository, round_service, comm_service):
 
 
 @pytest.mark.parametrize("quests", [
-    [Quest("quest_id1", 1, result=VoteResult.Passed), Quest("quest_id2", 2, result=VoteResult.Failed)], []])
+    [Quest("quest_id1", "game_id", 1, result=VoteResult.Passed),
+     Quest("quest_id2", "game_id", 2, result=VoteResult.Failed)], []])
 def test_handle_on_enter_team_selection_state_create_quest(mocker, quest_service, repository, round_service,
                                                            comm_service, quests):
     # Given
@@ -73,7 +74,7 @@ def test_handle_on_enter_team_selection_state_no_create_quest(mocker, quest_serv
                                                               comm_service):
     # Given
     game_id = "game_id"
-    quests = [Quest("quest_id1", 1, result=VoteResult.Passed), Quest("quest_id2", 2)]
+    quests = [Quest("quest_id1", "game_id", 1, result=VoteResult.Passed), Quest("quest_id2", "game_id", 2)]
     repository.get_quests.return_value = quests
     player_ids = ["player_id1", "player_id2", "player_id3"]
     leader_id = player_ids[1]
@@ -104,7 +105,7 @@ def test_handle_on_enter_team_selection_state_rotate_leader(mocker, quest_servic
                                                             current_leader_id, next_leader_id):
     # Given
     game_id = "game_id"
-    quests = [Quest("quest_id1", 1, result=VoteResult.Passed), Quest("quest_id2", 2)]
+    quests = [Quest("quest_id1", "game_id", 1, result=VoteResult.Passed), Quest("quest_id2", "game_id", 2)]
     repository.get_quests.return_value = quests
     player_ids = ["player_id1", "player_id2", "player_id3"]
     leader_id = player_ids[current_leader_id]
