@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from game_core.constants.voting_result import VoteResult
+from game_core.constants.vote_result import VoteResult
 
 # todo: add game id field
 @dataclass

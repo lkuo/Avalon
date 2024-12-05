@@ -3,7 +3,7 @@ from unittest.mock import call
 import pytest
 
 from game_core.constants.event_type import EventType
-from game_core.constants.voting_result import VoteResult
+from game_core.constants.vote_result import VoteResult
 from game_core.entities.event import Event
 from game_core.entities.game import GameConfig
 from game_core.entities.player import Player
