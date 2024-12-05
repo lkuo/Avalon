@@ -16,6 +16,7 @@ class EndGameState(State):
         super().__init__(StateName.END_GAME)
         self._game_service = game_service
 
+    # rename this to assassination state and create an endgame state only to announce the game results
     def handle(self, event: Event) -> State:
         if event.type != EventType.ASSASSINATION_TARGET_SUBMITTED:
             raise ValueError(f"EndGameState expects only ASSASSINATION_TARGET_SUBMITTED, got {event.type.value}")
@@ -23,7 +24,7 @@ class EndGameState(State):
         assassination_attempts = self._game_service.get_assassination_attempts(event.game_id)
         if assassination_attempts == 0:
             self._game_service.handle_game_ended(event.game_id)
-            return None
+            return self
 
         self._game_service.handle_assassination_target_submitted(event)
 

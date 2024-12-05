@@ -103,7 +103,7 @@ class QuestService:
         failed_quests = [q for q in quests if q.result == VotingResult.Failed]
         return len(passed_quests) >= 3 or len(failed_quests) >= 3
 
-    # todo: add docstring
+    # todo: add docstring, move comm_service broadcast to this method
     def handle_on_enter_team_selection_state(self, game_id: str) -> None:
         current_quest = self._get_last_quest(game_id)
         if self._is_create_quest(current_quest):

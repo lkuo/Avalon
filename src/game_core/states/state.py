@@ -20,3 +20,6 @@ class State(ABC):
 
     def on_enter(self, game_id: str) -> Optional[Self]:
         pass
+
+    def on_exit(self, game_id: str) -> None:
+        pass

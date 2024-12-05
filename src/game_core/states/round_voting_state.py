@@ -27,8 +27,11 @@ class RoundVotingState(State):
         if event.type != EventType.ROUND_VOTE_CAST:
             raise ValueError(f"RoundVotingState expects only {EventType.ROUND_VOTE_CAST.value}, got {event.type.value}")
 
+        # update round if round vote is completed
+        # update quest team members if round proposal is passed
         self._round_service.handle_round_vote_cast(event)
 
+        # do not look for quest number and round number, just looking for the last round of a game
         game_id = event.game_id
         quest_number = event.payload.get("quest_number")
         round_number = event.payload.get("round_number")
@@ -46,3 +49,5 @@ class RoundVotingState(State):
 
     def on_enter(self, game_id: str) -> None:
         self._round_service.on_enter_round_voting_state(game_id)
+
+    # announce round voting result

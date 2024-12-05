@@ -35,3 +35,5 @@ class TeamSelectionState(State):
         :return:
         """
         self._quest_service.handle_on_enter_team_selection_state(game_id)
+
+    # on exit, announce the team selection
