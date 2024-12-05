@@ -13,7 +13,7 @@ class EndGameState(State):
     """
 
     def __init__(self, game_service: GameService):
-        super().__init__(StateName.END_GAME)
+        super().__init__(StateName.EndGame)
         self._game_service = game_service
 
     # rename this to assassination state and create an endgame state only to announce the game results

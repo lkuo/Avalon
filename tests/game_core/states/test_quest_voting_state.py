@@ -42,7 +42,7 @@ def test_quest_voting_state_when_quest_not_voted(team_selection_state, end_game_
     next_state = state.handle(event)
 
     # Then
-    assert state.name == StateName.QUEST_VOTING
+    assert state.name == StateName.QuestVoting
     assert next_state == state
     quest_service.handle_quest_vote_cast.assert_called_once_with(event)
     quest_service.has_majority.assert_not_called()
@@ -61,7 +61,7 @@ def test_quest_voting_state_when_quests_completed(team_selection_state, end_game
     next_state = state.handle(event)
 
     # Then
-    assert state.name == StateName.QUEST_VOTING
+    assert state.name == StateName.QuestVoting
     assert next_state == end_game_state
     quest_service.handle_quest_vote_cast.assert_called_once_with(event)
     quest_service.set_quest_result.assert_called_once_with(event.game_id, QUEST_NUMBER, voting_result)
@@ -78,7 +78,7 @@ def test_quest_voting_state_when_quests_not_completed(team_selection_state, end_
     next_state = state.handle(event)
 
     # Then
-    assert state.name == StateName.QUEST_VOTING
+    assert state.name == StateName.QuestVoting
     assert next_state == team_selection_state
     quest_service.handle_quest_vote_cast.assert_called_once_with(event)
     quest_service.has_majority.assert_called_once_with(event.game_id)

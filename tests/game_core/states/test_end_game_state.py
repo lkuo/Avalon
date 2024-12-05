@@ -23,7 +23,7 @@ def test_end_game_state_when_game_not_ended(game_service):
     next_state = state.handle(event)
 
     # Then
-    assert state.name == StateName.END_GAME
+    assert state.name == StateName.EndGame
     assert next_state == state
     game_service.handle_assassination_target_submitted.assert_called_once_with(event)
 
@@ -53,7 +53,7 @@ def test_end_game_state_with_invalid_event(game_service):
         state.handle(invalid_event)
 
     # Then
-    assert state.name == StateName.END_GAME
+    assert state.name == StateName.EndGame
 
 
 def test_end_game_state_on_enter_with_assassination_attempts(game_service):

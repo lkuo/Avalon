@@ -31,7 +31,7 @@ def test_game_setup_state_with_game_started_event(state, game_service, player_se
     next_state = game_setup_state.handle(event)
 
     # Then
-    assert game_setup_state.name == StateName.GAME_SETUP
+    assert game_setup_state.name == StateName.GameSetup
     assert next_state == state
     player_service.handle_player_joined.assert_not_called()
     game_service.handle_game_started.assert_called_once_with(event)
@@ -46,7 +46,7 @@ def test_game_setup_state_with_player_joined_event(state, game_service, player_s
     next_state = game_setup_state.handle(event)
 
     # Then
-    assert game_setup_state.name == StateName.GAME_SETUP
+    assert game_setup_state.name == StateName.GameSetup
     assert next_state == game_setup_state
     player_service.handle_player_joined.assert_called_once_with(event)
     game_service.handle_game_started.assert_not_called()

@@ -13,7 +13,7 @@ class GameSetupState(State):
     """
 
     def __init__(self, team_selection_state: State, game_service: GameService, player_service: PlayerService):
-        super().__init__(StateName.GAME_SETUP)
+        super().__init__(StateName.GameSetup)
         self._player_service = player_service
         self._game_service = game_service
         self._team_selection_state = team_selection_state

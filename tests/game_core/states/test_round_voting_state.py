@@ -51,7 +51,7 @@ def test_round_voting_state_when_round_not_voted(team_selection_state, quest_vot
     next_state = round_voting_state.handle(event)
 
     # Then
-    assert round_voting_state.name == StateName.ROUND_VOTING
+    assert round_voting_state.name == StateName.RoundVoting
     assert next_state == round_voting_state
     round_service.handle_round_vote_cast.assert_called_once_with(event)
     round_service.is_round_vote_completed.assert_called_once_with(event.game_id, QUEST_NUMBER, ROUND_NUMBER)
@@ -75,7 +75,7 @@ def test_round_voting_state_when_proposal_passed(mocker, team_selection_state, q
     next_state = round_voting_state.handle(event)
 
     # Then
-    assert round_voting_state.name == StateName.ROUND_VOTING
+    assert round_voting_state.name == StateName.RoundVoting
     assert next_state == quest_voting_state
     round_service.handle_round_vote_cast.assert_called_once_with(event)
     round_service.is_round_vote_completed.assert_called_once_with(event.game_id, QUEST_NUMBER, ROUND_NUMBER)
@@ -99,7 +99,7 @@ def test_round_voting_state_when_proposal_rejected(mocker, team_selection_state,
     next_state = round_voting_state.handle(event)
 
     # Then
-    assert round_voting_state.name == StateName.ROUND_VOTING
+    assert round_voting_state.name == StateName.RoundVoting
     assert next_state == team_selection_state
     round_service.handle_round_vote_cast.assert_called_once_with(event)
     round_service.is_round_vote_completed.assert_called_once_with(event.game_id, QUEST_NUMBER, ROUND_NUMBER)
@@ -119,7 +119,7 @@ def test_round_voting_state_with_invalid_event_type(team_selection_state, quest_
         round_voting_state.handle(invalid_event)
 
     # Then
-    assert round_voting_state.name == StateName.ROUND_VOTING
+    assert round_voting_state.name == StateName.RoundVoting
     round_service.handle_round_vote_cast.assert_not_called()
     round_service.is_round_vote_completed.assert_not_called()
     round_service.is_proposal_passed.assert_not_called()

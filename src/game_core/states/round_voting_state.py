@@ -17,7 +17,7 @@ class RoundVotingState(State):
 
     def __init__(self, team_selection_state: State, quest_voting_state: State, round_service: RoundService,
                  quest_service: QuestService):
-        super().__init__(StateName.ROUND_VOTING)
+        super().__init__(StateName.RoundVoting)
         self._team_selection_state = team_selection_state
         self._quest_voting_state = quest_voting_state
         self._round_service = round_service

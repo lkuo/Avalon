@@ -32,7 +32,7 @@ def test_team_selection_state(state, quest_service, round_service):
     next_state = team_selection_state.handle(event)
 
     # Then
-    assert team_selection_state.name == StateName.TEAM_SELECTION
+    assert team_selection_state.name == StateName.TeamSelection
     assert next_state == state
     round_service.handle_team_proposal_submitted.assert_called_once_with(event)
 
