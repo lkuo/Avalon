@@ -15,8 +15,8 @@ def game_service(mocker):
 def test_end_game_state_when_game_not_ended(game_service):
     # Given
     state = EndGameState(game_service)
-    event = Event(game_id="game_id", type=EventType.AssassinationTargetSubmitted, recipients=[],
-                  payload={})
+    event = Event(id="event_id", game_id="game_id", type=EventType.AssassinationTargetSubmitted, recipients=[],
+                  payload={}, timestamp=123)
     game_service.is_game_finished.return_value = False
 
     # When
@@ -31,8 +31,8 @@ def test_end_game_state_when_game_not_ended(game_service):
 def test_end_game_state_when_game_ended(game_service):
     # Given
     state = EndGameState(game_service)
-    event = Event(game_id="game_id", type=EventType.AssassinationTargetSubmitted, recipients=[],
-                  payload={})
+    event = Event(id="event_id", game_id="game_id", type=EventType.AssassinationTargetSubmitted, recipients=[],
+                  payload={}, timestamp=123)
     game_service.is_game_finished.return_value = True
 
     # When
@@ -46,7 +46,7 @@ def test_end_game_state_when_game_ended(game_service):
 def test_end_game_state_with_invalid_event(game_service):
     # Given
     state = EndGameState(game_service)
-    invalid_event = Event(game_id="game_id", type=EventType.QuestStarted, recipients=[], payload={})
+    invalid_event = Event(id="event_id", game_id="game_id", type=EventType.QuestStarted, recipients=[], payload={}, timestamp=123)
 
     # When
     with pytest.raises(ValueError):

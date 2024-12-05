@@ -187,7 +187,7 @@ def test_handle_quest_vote_cast(mocker, quest_service, repository, comm_service)
     timestamp = 1234567890
     mock_datetime = mocker.patch("game_core.services.quest_service.datetime")
     mock_datetime.now.return_value.timestamp.return_value = timestamp
-    event = Event(game_id, EventType.QuestVoteCast.value, [], payload, timestamp)
+    event = Event("event_id", game_id, EventType.QuestVoteCast.value, [], payload, timestamp)
     quest_vote_cast_event = mocker.MagicMock()
     repository.put_event.return_value = quest_vote_cast_event
 
@@ -207,7 +207,7 @@ def test_handle_quest_vote_cast(mocker, quest_service, repository, comm_service)
 def test_handle_quest_vote_cast_with_invalid_event(quest_service, repository, payload):
     # Given
     game_id = "game_id"
-    event = Event(game_id, EventType.QuestVoteCast.value, [], payload, 0)
+    event = Event("event_id", game_id, EventType.QuestVoteCast.value, [], payload, 0)
 
     # When
     with pytest.raises(ValueError):
@@ -220,7 +220,7 @@ def test_handle_quest_vote_cast_with_invalid_event(quest_service, repository, pa
 def test_handle_quest_vote_cast_with_player_not_found(quest_service, repository):
     # Given
     game_id = "game_id"
-    event = Event(game_id, EventType.QuestVoteCast.value, [],
+    event = Event("event_id", game_id, EventType.QuestVoteCast.value, [],
                   {"player_id": "player_id", "quest_number": 1, "is_approved": False}, 0)
     repository.get_player.return_value = None
 
@@ -235,7 +235,7 @@ def test_handle_quest_vote_cast_with_player_not_found(quest_service, repository)
 def test_handle_quest_vote_cast_with_quest_not_found(mocker, quest_service, repository):
     # Given
     game_id = "game_id"
-    event = Event(game_id, EventType.QuestVoteCast.value, [],
+    event = Event("event_id", game_id, EventType.QuestVoteCast.value, [],
                   {"player_id": "player_id", "quest_number": 1, "is_approved": False}, 0)
     player = mocker.MagicMock()
     repository.get_player.return_value = player
@@ -252,7 +252,7 @@ def test_handle_quest_vote_cast_with_quest_not_found(mocker, quest_service, repo
 def test_handle_quest_vote_cast_with_invalid_quest(mocker, quest_service, repository):
     # Given
     game_id = "game_id"
-    event = Event(game_id, EventType.QuestVoteCast.value, [],
+    event = Event("event_id", game_id, EventType.QuestVoteCast.value, [],
                   {"player_id": "player_id", "quest_number": 1, "is_approved": False}, 0)
     player = mocker.MagicMock()
     repository.get_player.return_value = player

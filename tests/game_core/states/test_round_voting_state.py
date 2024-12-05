@@ -38,7 +38,7 @@ def quest_service(mocker):
 @pytest.fixture
 def event():
     payload = {"quest_number": QUEST_NUMBER, "round_number": ROUND_NUMBER}
-    return Event(game_id="game_id", type=EventType.RoundVoteCast, recipients=[], payload=payload)
+    return Event(id="event_id", game_id="game_id", type=EventType.RoundVoteCast, recipients=[], payload=payload, timestamp=123)
 
 
 def test_round_voting_state_when_round_not_voted(team_selection_state, quest_voting_state, round_service, quest_service,
@@ -112,7 +112,7 @@ def test_round_voting_state_with_invalid_event_type(team_selection_state, quest_
                                                     quest_service):
     # Given
     round_voting_state = RoundVotingState(team_selection_state, quest_voting_state, round_service, quest_service)
-    invalid_event = Event(game_id="game_id", type=EventType.QuestStarted, recipients=[], payload={})
+    invalid_event = Event(id="event_id", game_id="game_id", type=EventType.QuestStarted, recipients=[], payload={}, timestamp=123)
 
     # When
     with pytest.raises(ValueError):

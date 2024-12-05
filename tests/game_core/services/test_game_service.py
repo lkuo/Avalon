@@ -40,7 +40,7 @@ def game_service(repository, player_service, comm_service):
 def test_handle_game_started(mocker, game_service, repository, player_service, comm_service):
     # Given
     mock_event = mocker.patch("game_core.services.game_service.Event")
-    mock_event.side_effect = lambda *args, **kwargs: Event(*args, **kwargs, timestamp=TIMESTAMP)
+    mock_event.side_effect = lambda *args, **kwargs: Event(*args, **kwargs)
     game_id = "game_id"
     game_config = mocker.MagicMock()
     game = mocker.MagicMock()
@@ -73,7 +73,7 @@ def test_handle_game_started(mocker, game_service, repository, player_service, c
     ]
     player_ids = [p.id for p in players]
     random.shuffle(player_ids)
-    game_started_event = Event(game_id, EventType.GameStarted, [], {"player_ids": player_ids})
+    game_started_event = Event("event_id", game_id, EventType.GameStarted, [], {"player_ids": player_ids}, timestamp=123)
 
     # When
     game_service.handle_game_started(game_started_event)
@@ -93,7 +93,7 @@ def test_handle_game_started_with_game_already_started(mocker, game_service, pla
                                                        game_status):
     # Given
     game_id = "game_id"
-    event = Event(game_id, EventType.GameStarted, [], mocker.MagicMock())
+    event = Event("event_id", game_id, EventType.GameStarted, [], mocker.MagicMock(), 123)
     game = mocker.MagicMock()
     game.status = game_status
     repository.get_game.return_value = game
@@ -113,7 +113,7 @@ def test_handle_game_started_with_game_already_started(mocker, game_service, pla
 def test_handle_game_started_with_game_not_exists(mocker, game_service, player_service, repository, comm_service):
     # Given
     game_id = "game_id"
-    event = Event(game_id, EventType.GameStarted, [], mocker.MagicMock())
+    event = Event("event_id", game_id, EventType.GameStarted, [], mocker.MagicMock(), 123)
     repository.get_game.return_value = None
 
     # When
@@ -133,7 +133,7 @@ def test_handle_game_started_with_invalid_player_ids(mocker, game_service, playe
                                                      player_ids):
     # Given
     game_id = "game_id"
-    event = Event(game_id, EventType.GameStarted, [], {"player_ids": player_ids})
+    event = Event("event_id", game_id, EventType.GameStarted, [], {"player_ids": player_ids}, 123)
     game = mocker.MagicMock()
     game.status = GameStatus.NotStarted
     repository.get_game.return_value = game
@@ -154,6 +154,7 @@ def test_handle_game_started_with_invalid_player_ids(mocker, game_service, playe
 
 def _get_player_event(game_id, player_id, role, known_players) -> Event:
     return Event(
+        "event_id",
         game_id,
         EventType.GameStarted,
         [player_id],
@@ -164,7 +165,7 @@ def _get_player_event(game_id, player_id, role, known_players) -> Event:
                 "name": kp.name,
             } for kp in known_players]
         },
-        TIMESTAMP,
+        123,
     )
 
 

@@ -78,7 +78,7 @@ class RoundService:
             "quest_number": quest_number,
             "round_number": round_number
         }
-        round_vote_cast_event = Event(event.game_id, EventType.RoundVoteCast.value, [], round_vote_cast_event_payload)
+        round_vote_cast_event = Event("event_id", event.game_id, EventType.RoundVoteCast.value, [], round_vote_cast_event_payload, 123)
         self._comm_service.broadcast(round_vote_cast_event)
 
     def _validate_round_vote_cast_event(self, event):

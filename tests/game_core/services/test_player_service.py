@@ -37,10 +37,10 @@ def test_handle_player_joined(mocker, comm_service, repository, player_service):
     mock_uuid.uuid4.return_value = secret
     timestamp = 12345
     event_type = EventType.PlayerJoined
-    event = Event(game_id, event_type, [], {"player_name": name}, timestamp)
+    event = Event("event_id", game_id, event_type, [], {"player_name": name}, timestamp)
     player = Player(player_id, name, secret)
     repository.put_player.return_value = player
-    player_joined_event = Event(game_id, event_type, [], {"player_id": player_id, "player_name": name}, timestamp)
+    player_joined_event = Event("event_id", game_id, event_type, [], {"player_id": player_id, "player_name": name}, timestamp)
     repository.put_event.return_value = player_joined_event
 
     # When
@@ -59,7 +59,7 @@ def test_handle_player_joined_with_invalid_payload(comm_service, repository, pla
     game_id = "game_id"
     event_type = EventType.PlayerJoined
     timestamp = 12345
-    event = Event(game_id, event_type, [], payload, timestamp)
+    event = Event("event_id", game_id, event_type, [], payload, timestamp)
 
     # When
     with pytest.raises(ValueError):

@@ -137,9 +137,11 @@ def _get_player_event(game_id, players) -> dict[str: Event]:
             } for known_player in known_players],
         }
         events[player.id] = Event(
+            id="event_id",
             game_id=game_id,
             type=EventType.GameStarted,
             recipients=[player.id],
             payload=payload,
+            timestamp = 123
         )
     return events

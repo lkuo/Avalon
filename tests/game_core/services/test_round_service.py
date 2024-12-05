@@ -94,8 +94,8 @@ def test_handle_team_proposal_submitted(mocker, round_service, repository, comm_
     timestamp = 1234567890
     mock_datetime = mocker.patch("game_core.services.round_service.datetime")
     mock_datetime.now.return_value.timestamp.return_value = timestamp
-    event = Event(game_id, EventType.TeamProposalSubmitted.value, [],
-                  {"quest_number": quest_number, "round_number": round_number, "team_member_ids": team_member_ids})
+    event = Event("event_id", game_id, EventType.TeamProposalSubmitted.value, [],
+                  {"quest_number": quest_number, "round_number": round_number, "team_member_ids": team_member_ids}, timestamp=123)
     saved_event = mocker.MagicMock()
     repository.put_event.return_value = saved_event
     repository.get_round_vote.return_value = None
@@ -139,7 +139,7 @@ def test_handle_team_proposal_submitted_with_invalid_event(mocker, round_service
         player.id = player_id
         players.append(player)
     repository.get_players.return_value = players
-    event = Event(game_id, EventType.TeamProposalSubmitted.value, [], payload)
+    event = Event("event_id", game_id, EventType.TeamProposalSubmitted.value, [], payload, 123)
 
     # When
     with pytest.raises(ValueError):
@@ -155,7 +155,7 @@ def test_handle_round_vote_cast(mocker, round_service, repository, comm_service)
     is_approved = True
     payload = {"quest_number": quest_number, "round_number": round_number, "player_id": player_id,
                "is_approved": is_approved}
-    event = Event(game_id, EventType.RoundVoteCast.value, [], payload)
+    event = Event("event_id", game_id, EventType.RoundVoteCast.value, [], payload, 123)
     player = mocker.MagicMock(spec=Player)
     repository.get_player.return_value = player
     quest = mocker.MagicMock()
@@ -177,8 +177,8 @@ def test_handle_round_vote_cast(mocker, round_service, repository, comm_service)
     repository.get_round.assert_called_once_with(game_id, quest_number, round_number)
     repository.put_round_vote.assert_called_once_with(game_id, quest_number, round_number, player_id, is_approved)
     repository.get_round_vote.assert_called_once_with(game_id, quest_number, round_number, player_id)
-    round_vote_cast_event = Event(game_id, EventType.RoundVoteCast.value, [],
-                                  {"player_id": player_id, "quest_number": quest_number, "round_number": round_number})
+    round_vote_cast_event = Event("event_id", game_id, EventType.RoundVoteCast.value, [],
+                                  {"player_id": player_id, "quest_number": quest_number, "round_number": round_number}, 123)
     comm_service.broadcast.assert_called_once_with(round_vote_cast_event)
 
 
@@ -192,7 +192,7 @@ def test_handle_round_vote_cast(mocker, round_service, repository, comm_service)
 def test_handle_round_vote_cast_with_invalid_event(round_service, payload):
     # Given
     game_id = "game_id"
-    event = Event(game_id, EventType.RoundVoteCast.value, [], payload)
+    event = Event("event_id", game_id, EventType.RoundVoteCast.value, [], payload, 123)
 
     # When
     with pytest.raises(ValueError):
@@ -208,7 +208,7 @@ def test_handle_round_vote_cast_with_player_voted(mocker, round_service, reposit
     is_approved = True
     payload = {"quest_number": quest_number, "round_number": round_number, "player_id": player_id,
                "is_approved": is_approved}
-    event = Event(game_id, EventType.RoundVoteCast.value, [], payload)
+    event = Event("event_id", game_id, EventType.RoundVoteCast.value, [], payload, 123)
     player = mocker.MagicMock(spec=Player)
     repository.get_player.return_value = player
     quest = mocker.MagicMock()
