@@ -2,9 +2,6 @@ from enum import Enum
 
 
 class EventType(Enum):
-    """
-    Enum class for event types.
-    """
     AssassinationFailed = "AssassinationFailed"
     AssassinationStarted = "AssassinationStarted"
     AssassinationSucceeded = "AssassinationSucceeded"
