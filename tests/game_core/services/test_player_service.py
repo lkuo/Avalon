@@ -38,7 +38,7 @@ def test_handle_player_joined(mocker, comm_service, repository, player_service):
     timestamp = 12345
     event_type = EventType.PlayerJoined
     event = Event("event_id", game_id, event_type, [], {"player_name": name}, timestamp)
-    player = Player(player_id, name, secret)
+    player = Player(player_id,  "game_id",name, secret)
     repository.put_player.return_value = player
     player_joined_event = Event("event_id", game_id, event_type, [], {"player_id": player_id, "player_name": name}, timestamp)
     repository.put_event.return_value = player_joined_event
@@ -79,7 +79,7 @@ def test_assign_roles(mocker, repository, player_service):
         Role.Percival.value: [Role.Merlin.value, Role.Mordred.value],
         Role.Mordred.value: [Role.Percival.value],
     }
-    players = [Player(f"player_id_{i}", f"Player {i}", f"secret_{i}") for i in range(10)]
+    players = [Player(f"player_id_{i}", "game_id", f"Player {i}", f"secret_{i}") for i in range(10)]
     mocker.patch('game_core.services.player_service.random.shuffle', return_value=players)
     repository.get_players.return_value = players
     repository.put_players.side_effect = lambda _, _players: _players

@@ -47,11 +47,11 @@ def test_handle_game_started(mocker, game_service, repository, player_service, c
     game.status = GameStatus.NotStarted
     game.config = game_config
     repository.get_game.return_value = game
-    merlin_player = Player("player1", "merlin_player", "secret1", Role.Merlin)
-    mordred_player = Player("player2", "mordred_player", "secret2", Role.Mordred)
-    percival_player = Player("player3", "percival_player", "secret3", Role.Percival)
-    villager_player1 = Player("player4", "villager_player1", "secret4", Role.Villager)
-    villager_player2 = Player("player5", "villager_player2", "secret5", Role.Villager)
+    merlin_player = Player("player1", "game_id", "merlin_player", "secret1", Role.Merlin)
+    mordred_player = Player("player2", "game_id", "mordred_player", "secret2", Role.Mordred)
+    percival_player = Player("player3", "game_id", "percival_player", "secret3", Role.Percival)
+    villager_player1 = Player("player4", "game_id", "villager_player1", "secret4", Role.Villager)
+    villager_player2 = Player("player5", "game_id", "villager_player2", "secret5", Role.Villager)
     merlin_player.known_player_ids = [mordred_player.id]
     mordred_player.known_player_ids = [merlin_player.id]
     percival_player.known_player_ids = [merlin_player.id, mordred_player.id]
@@ -73,7 +73,8 @@ def test_handle_game_started(mocker, game_service, repository, player_service, c
     ]
     player_ids = [p.id for p in players]
     random.shuffle(player_ids)
-    game_started_event = Event("event_id", game_id, EventType.GameStarted, [], {"player_ids": player_ids}, timestamp=123)
+    game_started_event = Event("event_id", game_id, EventType.GameStarted, [], {"player_ids": player_ids},
+                               timestamp=123)
 
     # When
     game_service.handle_game_started(game_started_event)
@@ -218,9 +219,9 @@ def test_on_enter_end_game_state(mocker, game_service, repository, comm_service)
     game = mocker.MagicMock(spec=Game)
     assassin_id = "assassin_id"
     repository.get_players.return_value = [
-        Player("player1", "player1", "secret1", Role.Merlin),
-        Player("player2", "player2", "secret2", Role.Mordred),
-        Player(assassin_id, "player3", "secret3", Role.Assassin),
+        Player("player1", "game_id", "player1", "secret1", Role.Merlin),
+        Player("player2", "game_id", "player2", "secret2", Role.Mordred),
+        Player(assassin_id, "game_id", "player3", "secret3", Role.Assassin),
     ]
     assassination_target_requested_event = mocker.MagicMock(spec=Event)
     assassination_started_event = mocker.MagicMock(spec=Event)
@@ -373,9 +374,9 @@ def test_handle_game_ended(mocker, game_service, repository, comm_service):
     game = mocker.MagicMock(spec=Game)
     repository.get_game.return_value = game
     players = [
-        Player("player1", "player1", "secret1", Role.Merlin),
-        Player("player2", "player2", "secret2", Role.Mordred),
-        Player("player3", "player3", "secret3", Role.Assassin),
+        Player("player1", "game_id", "player1", "secret1", Role.Merlin),
+        Player("player2", "game_id", "player2", "secret2", Role.Mordred),
+        Player("player3", "game_id", "player3", "secret3", Role.Assassin),
     ]
     repository.get_players.return_value = players
     game_ended_event = mocker.MagicMock(spec=Event)
