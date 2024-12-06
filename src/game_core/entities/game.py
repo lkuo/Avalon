@@ -14,6 +14,7 @@ class GameConfig:
 class Game:
     id: str
     status: str
+    state: str
     result: str
     config: GameConfig
     player_ids: Optional[list[str]]

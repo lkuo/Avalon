@@ -29,7 +29,7 @@ def comm_service(mocker):
 
 @pytest.fixture
 def quest_service(repository, round_service, comm_service):
-    return QuestService(repository, round_service, comm_service)
+    return QuestService(comm_service, repository, round_service)
 
 
 @pytest.mark.parametrize("quests", [

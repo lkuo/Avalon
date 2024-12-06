@@ -26,7 +26,7 @@ def comm_service(mocker):
 
 @pytest.fixture
 def round_service(repository, comm_service):
-    return RoundService(repository, comm_service)
+    return RoundService(comm_service, repository)
 
 
 def test_round_service_create_round(mocker, round_service, repository, comm_service):

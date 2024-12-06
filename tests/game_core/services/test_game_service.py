@@ -34,7 +34,7 @@ def comm_service(mocker):
 
 @pytest.fixture
 def game_service(repository, player_service, comm_service):
-    return GameService(repository, player_service, comm_service)
+    return GameService(comm_service, repository, player_service)
 
 
 def test_handle_game_started(mocker, game_service, repository, player_service, comm_service):

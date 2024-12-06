@@ -12,7 +12,7 @@ from game_core.services.round_service import RoundService
 
 class QuestService:
 
-    def __init__(self, repository: Repository, round_service: RoundService, comm_service: CommService):
+    def __init__(self, comm_service: CommService, repository: Repository, round_service: RoundService):
         self._repository = repository
         self._round_service = round_service
         self._comm_service = comm_service

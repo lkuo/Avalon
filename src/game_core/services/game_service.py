@@ -12,11 +12,10 @@ from game_core.services.player_service import PlayerService
 
 
 class GameService:
-    def __init__(self, repository: Repository, player_service: PlayerService, comm_service: CommService):
+    def __init__(self, comm_service: CommService, repository: Repository, player_service: PlayerService):
         self._repository = repository
         self._player_service = player_service
         self._comm_service = comm_service
-
 
     # todo: add docstring
     def handle_game_started(self, event: Event) -> None:
@@ -142,6 +141,6 @@ def _get_player_event(game_id, players) -> dict[str: Event]:
             type=EventType.GameStarted,
             recipients=[player.id],
             payload=payload,
-            timestamp = 123
+            timestamp=123
         )
     return events

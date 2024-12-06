@@ -10,7 +10,7 @@ from game_core.services.comm_service import CommService
 
 class RoundService:
 
-    def __init__(self, repository: Repository, comm_service: CommService):
+    def __init__(self, comm_service: CommService, repository: Repository):
         self._repository = repository
         self._comm_service = comm_service
 
