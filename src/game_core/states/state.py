@@ -2,7 +2,7 @@ from abc import abstractmethod, ABC
 from typing import Self, Optional
 
 from game_core.constants.state_name import StateName
-from game_core.entities.event import Event
+from game_core.entities.action import Action
 
 
 class State(ABC):
@@ -15,7 +15,7 @@ class State(ABC):
         return self._name
 
     @abstractmethod
-    def handle(self, event: Event) -> Optional[Self]:
+    def handle(self, action: Action) -> Optional[Self]:
         pass
 
     def on_enter(self, game_id: str) -> Optional[Self]:

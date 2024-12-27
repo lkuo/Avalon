@@ -18,5 +18,4 @@ class Game:
     result: str
     config: GameConfig
     player_ids: Optional[list[str]]
-    leader_id: Optional[str]
     assassination_attempts: Optional[int]
