@@ -1,9 +1,9 @@
-from game_core.entities.event import Event
-from game_core.constants.event_type import EventType
+from game_core.constants.action_type import ActionType
+from game_core.constants.state_name import StateName
+from game_core.entities.action import Action
 from game_core.services.game_service import GameService
 from game_core.services.player_service import PlayerService
 from game_core.states.state import State
-from game_core.constants.state_name import StateName
 
 
 class GameSetupState(State):
@@ -12,20 +12,29 @@ class GameSetupState(State):
     Transitions to TeamSelectionState state when receive GameStartEvent.
     """
 
-    def __init__(self, team_selection_state: State, game_service: GameService, player_service: PlayerService):
+    def __init__(
+        self,
+        game_service: GameService,
+        player_service: PlayerService,
+    ):
         super().__init__(StateName.GameSetup)
         self._player_service = player_service
         self._game_service = game_service
+        self._team_selection_state = None
+
+    def set_states(self, team_selection_state: State) -> None:
         self._team_selection_state = team_selection_state
 
-    def handle(self, event: Event) -> State:
-        if event.type not in [EventType.GameStarted, EventType.PlayerJoined]:
-            raise ValueError(f"GameSetupState expects GAME_STARTED or PLAYER_JOINED event, got {event.type.value}")
+    def handle(self, action: Action) -> State:
+        if action.type not in [ActionType.StartGame, ActionType.JoinGame]:
+            raise ValueError(
+                f"GameSetupState expects GAME_STARTED or PLAYER_JOINED event, got {action.type.value}"
+            )
 
-        if event.type == EventType.PlayerJoined:
-            self._player_service.handle_player_joined(event)
+        if action.type == ActionType.JoinGame:
+            self._player_service.handle_join_game(action)
             return self
 
-        self._game_service.handle_game_started(event)
+        self._game_service.handle_start_game(action)
 
         return self._team_selection_state

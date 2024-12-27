@@ -11,4 +11,4 @@ class Event:
     type: EventType
     recipients: list[str]  # empty list indicates a public event visible to everyone
     payload: dict[str, Any]
-    timestamp: int
+    timestamp: str

@@ -1,14 +1,32 @@
 import pytest
 
-from game_core.entities.event import Event
-from game_core.constants.event_type import EventType
+from game_core.constants.action_type import ActionType
+from game_core.entities.action import Action
 from game_core.services.player_service import PlayerService
 from game_core.states.game_setup_state import GameSetupState
 from game_core.constants.state_name import StateName
 
+ACTION_ID = "action_id"
+GAME_ID = "game_id"
+PLAYER_ID = "player_id"
+START_GAME_PAYLOAD = {}
+JOIN_GAME_PAYLOAD = {}
+
 
 @pytest.fixture
-def state(mocker):
+def start_game_action():
+    return Action(
+        ACTION_ID, GAME_ID, PLAYER_ID, ActionType.StartGame, START_GAME_PAYLOAD
+    )
+
+
+@pytest.fixture
+def join_game_action():
+    return Action(ACTION_ID, GAME_ID, PLAYER_ID, ActionType.JoinGame, JOIN_GAME_PAYLOAD)
+
+
+@pytest.fixture
+def team_selection_state(mocker):
     return mocker.MagicMock()
 
 
@@ -22,45 +40,58 @@ def player_service(mocker):
     return mocker.MagicMock(spec=PlayerService)
 
 
-def test_game_setup_state_with_game_started_event(state, game_service, player_service):
-    # Given
-    event = Event(id="event_id", game_id="game_id", type=EventType.GameStarted, recipients=[], payload={}, timestamp=123)
-    game_setup_state = GameSetupState(state, game_service, player_service)
+@pytest.fixture
+def game_setup_state(team_selection_state, game_service, player_service):
+    game_setup_state = GameSetupState(game_service, player_service)
+    game_setup_state.set_states(team_selection_state)
+    return game_setup_state
 
+
+def test_game_setup_state_with_start_game_action(
+    team_selection_state,
+    game_setup_state,
+    game_service,
+    player_service,
+    start_game_action,
+):
+    # Given
     # When
-    next_state = game_setup_state.handle(event)
+    next_state = game_setup_state.handle(start_game_action)
 
     # Then
     assert game_setup_state.name == StateName.GameSetup
-    assert next_state == state
-    player_service.handle_player_joined.assert_not_called()
-    game_service.handle_game_started.assert_called_once_with(event)
+    assert next_state == team_selection_state
+    player_service.handle_join_game.assert_not_called()
+    game_service.handle_start_game.assert_called_once_with(start_game_action)
 
 
-def test_game_setup_state_with_player_joined_event(state, game_service, player_service):
+def test_game_setup_state_with_join_game_action(
+    game_setup_state,
+    game_service,
+    player_service,
+    join_game_action,
+):
     # Given
-    event = Event(id="event_id", game_id="game_id", type=EventType.PlayerJoined, recipients=[], payload={}, timestamp=123)
-    game_setup_state = GameSetupState(state, game_service, player_service)
-
     # When
-    next_state = game_setup_state.handle(event)
+    next_state = game_setup_state.handle(join_game_action)
 
     # Then
     assert game_setup_state.name == StateName.GameSetup
     assert next_state == game_setup_state
-    player_service.handle_player_joined.assert_called_once_with(event)
-    game_service.handle_game_started.assert_not_called()
+    player_service.handle_join_game.assert_called_once_with(join_game_action)
+    game_service.handle_start_game.assert_not_called()
 
 
-def test_game_setup_state_invalid_event(state, game_service, player_service):
+def test_game_setup_state_invalid_event(game_setup_state, game_service, player_service):
     # Given
-    invalid_event = Event(id="event_id", game_id="game_id", type=EventType.QuestStarted, recipients=[], payload={}, timestamp=123)
-    game_setup_state = GameSetupState(state, game_service, player_service)
+    invalid_action = Action(
+        ACTION_ID, GAME_ID, PLAYER_ID, ActionType.SubmitTeamProposal, START_GAME_PAYLOAD
+    )
 
     # When
     with pytest.raises(ValueError):
-        game_setup_state.handle(invalid_event)
+        game_setup_state.handle(invalid_action)
 
     # Then
-    player_service.handle_player_joined.assert_not_called()
-    game_service.handle_game_started.assert_not_called()
+    player_service.handle_join_game.assert_not_called()
+    game_service.handle_start_game.assert_not_called()

@@ -19,6 +19,6 @@ class EventType(Enum):
     RoundCompleted = "RoundCompleted"
     RoundStarted = "RoundStarted"
     RoundVoteCast = "RoundVoteCast"
-    SelectTeam = "SelectTeam"
+    TeamSelectionRequested = "TeamSelectionRequested"
     TeamProposalSubmitted = "TeamProposalSubmitted"
     TeamRejected = "TeamRejected"

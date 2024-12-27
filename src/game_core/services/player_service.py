@@ -2,50 +2,41 @@ import random
 import uuid
 from collections import defaultdict
 
+from pydantic import BaseModel
+
 from game_core.constants.role import Role
-from game_core.entities.event import Event
+from game_core.entities.action import Action
 from game_core.entities.player import Player
 from game_core.repository import Repository
-from game_core.services.comm_service import CommService
+from game_core.services.event_service import EventService
 
 
 class PlayerService:
-    def __init__(self, comm_service: CommService, repository: Repository):
-        self._comm_service = comm_service
+    def __init__(
+        self,
+        event_service: EventService,
+        repository: Repository,
+    ):
+        self._event_service = event_service
         self._repository = repository
 
-    # todo: add docstring
-    def handle_player_joined(self, event: Event):
+    def handle_join_game(self, action: Action) -> None:
         """
         Persist the player, and create a PlayerJoined event then broadcast the event
-        :param event: PlayerJoined event
+        :param action: PlayerJoined event
         :return:
         """
-        player = self._save_player(event)
-        player_joined_event = self._save_player_joined_event(player, event)
-        self._comm_service.broadcast(player_joined_event)
+        player = self._save_player(action)
+        self._event_service.create_player_joined_event(
+            player.id, action.game_id, player.name
+        )
 
-    def _save_player(self, event: Event) -> Player:
-        payload = getattr(event, 'payload') or {}
-        name = payload.get('player_name', '')
-        if not name:
-            raise ValueError(f"Player name is not found in event payload {payload}")
-        game_id = event.game_id
+    def _save_player(self, action: Action) -> Player:
+        payload = JoinGamePayload(**action.payload)
+        game_id = action.game_id
         secret = str(uuid.uuid4())
-        return self._repository.put_player(game_id, name, secret)
+        return self._repository.put_player(game_id, payload.name, secret)
 
-    def _save_player_joined_event(self, player: Player, event: Event) -> Event:
-        game_id = event.game_id
-        event_type = event.type.value
-        recipients = []
-        payload = {
-            "player_id": player.id,
-            'player_name': player.name,
-        }
-        timestamp = event.timestamp
-        return self._repository.put_event(game_id, event_type, recipients, payload, timestamp)
-
-    # todo: add docstring
     def assign_roles(self, game_id: str, roles: dict[str, list[str]]) -> list[Player]:
         roles = {Role(k): [Role(v) for v in vals] for k, vals in roles.items()}
         roles[Role.Villager] = []
@@ -66,3 +57,16 @@ class PlayerService:
                 player.known_player_ids.extend(role_player_ids[known_role])
 
         return self._repository.put_players(game_id, players)
+
+    def get_player(self, player_id: str) -> Player:
+        player = self._repository.get_player(player_id)
+        if not player:
+            raise ValueError(f"Player {player_id} not found")
+        return player
+
+    def get_players(self, game_id: str) -> list[Player]:
+        return self._repository.get_players(game_id)
+
+
+class JoinGamePayload(BaseModel):
+    name: str
