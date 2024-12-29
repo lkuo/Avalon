@@ -13,14 +13,6 @@ from game_core.states.quest_voting_state import QuestVotingState
 from game_core.states.round_voting_state import RoundVotingState
 from game_core.states.team_selection_state import TeamSelectionState
 
-STATE_NAME_MAP = {
-    StateName.GameSetup.value: GameSetupState,
-    StateName.TeamSelection.value: TeamSelectionState,
-    StateName.QuestVoting.value: QuestVotingState,
-    StateName.RoundVoting.value: RoundVotingState,
-    StateName.EndGame.value: EndGameState,
-}
-
 
 class StateMachine:
 
@@ -37,7 +29,7 @@ class StateMachine:
             self._round_service, self._event_service, self._player_service, repository
         )
         self._current_state = None
-
+        self.state_name_map = {}
         self._setup_states()
 
     def _setup_states(self) -> None:
@@ -56,12 +48,19 @@ class StateMachine:
         round_voting_state.set_states(team_selection_state, quest_voting_state)
         quest_voting_state.set_states(team_selection_state, end_game_state)
 
-        self._current_state = STATE_NAME_MAP[game.state]
+        self.state_name_map = {
+            StateName.GameSetup.value: game_setup_state,
+            StateName.TeamSelection.value: team_selection_state,
+            StateName.RoundVoting.value: round_voting_state,
+            StateName.QuestVoting.value: quest_voting_state,
+            StateName.EndGame.value: end_game_state,
+        }
+        self._current_state = self.state_name_map.get(game.state)
 
         if not self._current_state:
             raise ValueError(f"Invalid state {game.state}")
 
-    def handle_event(self, action: Action) -> None:
+    def handle_action(self, action: Action) -> None:
         if action.payload is None:
             raise ValueError("Action payload is None")
         next_state = self._current_state.handle(action)
