@@ -141,8 +141,7 @@ def test_handle_game_started_with_game_not_exists(
     # Then
     repository.get_game.assert_called_once_with(game_id)
     player_service.assign_roles.assert_not_called()
-    repository.put_events.assert_not_called()
-    repository.put_events.assert_not_called()
+    repository.put_event.assert_not_called()
 
 
 @pytest.mark.parametrize("player_ids", [[], ["invalid_id1", "invalid_id2"]])
@@ -165,7 +164,7 @@ def test_handle_game_started_with_invalid_player_ids(
     # Then
     repository.get_game.assert_called_once_with(game_id)
     player_service.assign_roles.assert_called_once_with(game_id, game.config.roles)
-    repository.put_events.assert_not_called()
+    repository.put_event.assert_not_called()
 
 
 def _get_payload(role, known_players) -> dict[str, Any]:

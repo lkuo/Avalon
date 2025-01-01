@@ -217,5 +217,5 @@ class EventService:
         payload: dict[str, Any],
     ) -> Event:
         return self._repository.put_event(
-            game_id, event_type.value, recipients, payload, datetime.now().isoformat()
+            game_id, event_type, recipients, payload, datetime.now().isoformat()
         )

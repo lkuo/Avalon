@@ -1,3 +1,5 @@
+from unittest.mock import call
+
 import pytest
 
 from game_core.constants.action_type import ActionType
@@ -87,7 +89,6 @@ def test_assign_roles(mocker, repository, player_service):
         "game_core.services.player_service.random.shuffle", return_value=players
     )
     repository.get_players.return_value = players
-    repository.put_players.side_effect = lambda _, _players: _players
 
     # When
     assigned_players = player_service.assign_roles(game_id, roles)
@@ -105,7 +106,7 @@ def test_assign_roles(mocker, repository, player_service):
 
     assert len(assigned_players) == len(players)
     repository.get_players.assert_called_once_with(game_id)
-    repository.put_players.assert_called_once_with(game_id, assigned_players)
+    repository.update_player.assert_has_calls([call(p) for p in players])
     assert merlin_players[0].known_player_ids == [mordred_players[0].id]
     assert set(percival_players[0].known_player_ids) == {
         merlin_players[0].id,

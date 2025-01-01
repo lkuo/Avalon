@@ -60,7 +60,7 @@ def test_create_player_joined_event(
 
     # Then
     repository.put_event.assert_called_once_with(
-        GAME_ID, EventType.PlayerJoined.value, [], expected_payload, TIMESTAMP
+        GAME_ID, EventType.PlayerJoined, [], expected_payload, TIMESTAMP
     )
     comm_service.broadcast.assert_called_once_with(created_event)
 
@@ -87,7 +87,7 @@ def test_create_game_started_events(
     calls = [
         call(
             GAME_ID,
-            EventType.GameStarted.value,
+            EventType.GameStarted,
             [player1.id],
             {
                 "role": Role.Merlin.value,
@@ -102,7 +102,7 @@ def test_create_game_started_events(
         ),
         call(
             GAME_ID,
-            EventType.GameStarted.value,
+            EventType.GameStarted,
             [player2.id],
             {
                 "role": Role.Assassin.value,
@@ -134,7 +134,7 @@ def test_create_assassination_started_event(
     # Then
     repository.put_event.assert_called_once_with(
         GAME_ID,
-        EventType.AssassinationStarted.value,
+        EventType.AssassinationStarted,
         [],
         {"assassination_attempts": assassination_attempts},
         TIMESTAMP,
@@ -155,7 +155,7 @@ def test_create_round_started_event(
     # Then
     repository.put_event.assert_called_once_with(
         GAME_ID,
-        EventType.RoundStarted.value,
+        EventType.RoundStarted,
         [],
         {
             "quest_number": QUEST_NUMBER,
@@ -181,7 +181,7 @@ def test_create_quest_vote_cast_event(
     # Then
     repository.put_event.assert_called_once_with(
         GAME_ID,
-        EventType.QuestVoteCast.value,
+        EventType.QuestVoteCast,
         [],
         {
             "player_id": PLAYER_ID,
@@ -203,7 +203,7 @@ def test_create_quest_started_event(
     # Then
     repository.put_event.assert_called_once_with(
         GAME_ID,
-        EventType.QuestStarted.value,
+        EventType.QuestStarted,
         [],
         {
             "quest_number": QUEST_NUMBER,
@@ -225,7 +225,7 @@ def test_create_team_selection_requested_event(
     # Then
     repository.put_event.assert_called_once_with(
         GAME_ID,
-        EventType.TeamSelectionRequested.value,
+        EventType.TeamSelectionRequested,
         [],
         {
             "quest_number": QUEST_NUMBER,
@@ -251,7 +251,7 @@ def test_create_team_proposal_submitted_event(
     # Then
     repository.put_event.assert_called_once_with(
         GAME_ID,
-        EventType.TeamProposalSubmitted.value,
+        EventType.TeamProposalSubmitted,
         [],
         {
             "quest_number": QUEST_NUMBER,
@@ -277,7 +277,7 @@ def test_create_quest_vote_started_event(
     # Then
     repository.put_event.assert_called_once_with(
         GAME_ID,
-        EventType.QuestVoteStarted.value,
+        EventType.QuestVoteStarted,
         [],
         {"quest_number": QUEST_NUMBER, "team_member_ids": team_member_ids},
         TIMESTAMP,
@@ -299,7 +299,7 @@ def test_create_quest_vote_requested_event(
     # Then
     repository.put_event.assert_called_once_with(
         GAME_ID,
-        EventType.QuestVoteRequested.value,
+        EventType.QuestVoteRequested,
         team_member_ids,
         {"quest_number": QUEST_NUMBER, "team_member_ids": team_member_ids},
         TIMESTAMP,
@@ -327,7 +327,7 @@ def test_create_assassination_target_requested_event(
     # Then
     repository.put_event.assert_called_once_with(
         GAME_ID,
-        EventType.AssassinationTargetRequested.value,
+        EventType.AssassinationTargetRequested,
         [assassin_id],
         {},
         TIMESTAMP,
@@ -349,7 +349,7 @@ def test_create_round_vote_cast_event(
     # Then
     repository.put_event.assert_called_once_with(
         GAME_ID,
-        EventType.RoundVoteCast.value,
+        EventType.RoundVoteCast,
         [],
         {
             "quest_number": QUEST_NUMBER,
@@ -376,7 +376,7 @@ def test_create_round_completed_event(
     # Then
     repository.put_event.assert_called_once_with(
         GAME_ID,
-        EventType.RoundCompleted.value,
+        EventType.RoundCompleted,
         [],
         {
             "quest_number": QUEST_NUMBER,
@@ -400,7 +400,7 @@ def test_create_quest_completed_event(
     # Then
     repository.put_event.assert_called_once_with(
         GAME_ID,
-        EventType.QuestCompleted.value,
+        EventType.QuestCompleted,
         [],
         {
             "quest_number": QUEST_NUMBER,
@@ -423,7 +423,7 @@ def test_create_assassination_event_success(
     # Then
     repository.put_event.assert_called_once_with(
         GAME_ID,
-        EventType.AssassinationFailed.value,
+        EventType.AssassinationFailed,
         [],
         {"target_id": TARGET_ID, "is_successful": is_successful},
         TIMESTAMP,
@@ -443,7 +443,7 @@ def test_create_assassination_event_failure(
     # Then
     repository.put_event.assert_called_once_with(
         GAME_ID,
-        EventType.AssassinationFailed.value,
+        EventType.AssassinationFailed,
         [],
         {"target_id": TARGET_ID, "is_successful": is_successful},
         TIMESTAMP,
@@ -466,7 +466,7 @@ def test_create_game_ended_event(
     # Then
     repository.put_event.assert_called_once_with(
         GAME_ID,
-        EventType.GameEnded.value,
+        EventType.GameEnded,
         [],
         {"player_roles": player_roles},
         TIMESTAMP,

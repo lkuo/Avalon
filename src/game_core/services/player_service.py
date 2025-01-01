@@ -55,8 +55,8 @@ class PlayerService:
         for player in players:
             for known_role in roles[player.role]:
                 player.known_player_ids.extend(role_player_ids[known_role])
-
-        return self._repository.put_players(game_id, players)
+            self._repository.update_player(player)
+        return players
 
     def get_player(self, player_id: str) -> Player:
         player = self._repository.get_player(player_id)
