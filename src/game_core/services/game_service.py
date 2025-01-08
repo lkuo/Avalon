@@ -9,6 +9,7 @@ from game_core.repository import Repository
 from game_core.services.event_service import EventService
 from game_core.services.player_service import PlayerService
 
+# todo: 1. add create game
 
 class GameService:
     def __init__(
@@ -38,7 +39,7 @@ class GameService:
                 f"player_ids in GameStarted event payload does not match DB, got {given_player_ids}"
             )
         game.status = GameStatus.InProgress
-        self._repository.put_game(game)
+        self._repository.update_game(game)
         self._event_service.create_game_started_events(game_id, players)
 
     def _get_game(self, game_id: str) -> Game:

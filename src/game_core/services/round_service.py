@@ -166,7 +166,7 @@ class RoundService:
         idx = player_ids.index(game.leader_id)
         next_leader_id = player_ids[(idx + 1) % len(player_ids)]
         game.leader_id = next_leader_id
-        self._repository.put_game(game)
+        self._repository.update_game(game)
         return next_leader_id
 
 

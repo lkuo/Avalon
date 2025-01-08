@@ -67,3 +67,4 @@ class StateMachine:
         if next_state != self._current_state:
             self._current_state.on_exit()
             self._current_state = next_state.on_enter() or next_state
+            # todo persist state when updated

@@ -1,6 +1,9 @@
 from dataclasses import dataclass
 from typing import Optional
 
+from game_core.constants.game_status import GameStatus
+from game_core.constants.state_name import StateName
+
 
 @dataclass
 class GameConfig:
@@ -13,8 +16,8 @@ class GameConfig:
 @dataclass
 class Game:
     id: str
-    status: str
-    state: str
+    status: GameStatus
+    state: StateName
     config: GameConfig
     player_ids: Optional[list[str]]
     assassination_attempts: Optional[int]

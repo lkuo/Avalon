@@ -100,7 +100,7 @@ def test_handle_start_game(
     event_service.create_game_started_events.assert_called_once_with(GAME_ID, players)
     game.status = GameStatus.InProgress
     game.player_ids = player_ids
-    repository.put_game.assert_called_once_with(game)
+    repository.update_game.assert_called_once_with(game)
 
 
 @pytest.mark.parametrize("game_status", [GameStatus.InProgress, GameStatus.Finished])
@@ -124,7 +124,7 @@ def test_handle_start_game_with_game_already_started(
     # Then
     repository.get_game.assert_called_once_with(GAME_ID)
     player_service.assign_roles.assert_not_called()
-    repository.put_game.assert_not_called()
+    repository.update_game.assert_not_called()
 
 
 def test_handle_game_started_with_game_not_exists(

@@ -76,6 +76,7 @@ class QuestService:
         game_id = action.game_id
         self._player_service.get_player(player_id)
         self.get_quest(game_id, quest_number)
+        # todo add validation for player has not voted yet
 
     def is_quest_vote_completed(self, game_id: str, quest_number: int) -> bool:
         quest = self._repository.get_quest(game_id, quest_number)

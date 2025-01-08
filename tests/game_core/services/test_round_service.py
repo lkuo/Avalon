@@ -97,7 +97,7 @@ def test_round_service_create_round(mocker, round_service, repository, event_ser
     )
     updated_game = game
     updated_game.leader_id = player_ids[0]
-    repository.put_game.assert_called_once_with(updated_game)
+    repository.update_game.assert_called_once_with(updated_game)
     event_service.create_round_started_event.assert_called_once_with(
         GAME_ID, QUEST_NUMBER, ROUND_NUMBER, player_ids[0]
     )

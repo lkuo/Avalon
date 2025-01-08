@@ -42,10 +42,6 @@ class Repository(ABC):
         pass
 
     @abstractmethod
-    def put_game(self, game: Game) -> Game:
-        pass
-
-    @abstractmethod
     def put_quest(self, game_id: str, quest_number: int) -> Quest:
         pass
 
