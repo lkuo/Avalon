@@ -27,6 +27,41 @@ class DynamoDBRepository(Repository):
         )
         self._table = self._dynamodb.Table(table)
 
+    def put_game(
+        self,
+        quest_team_size: dict[int, int],
+        roles: dict[str, list[str]],
+        assassination_attempts: int
+    ) -> Game:
+        game_id = uuid.uuid4().hex
+        config = {
+            "quest_team_size": {str(k): str(v) for k, v in quest_team_size.items()},
+            "roles": roles,
+            "assassination_attempts": assassination_attempts,
+        }
+        item = {
+            "pk": game_id,
+            "sk": "game",
+            "status": GameStatus.NotStarted.value,
+            "state": StateName.GameSetup.value,
+            "config": config,
+            "player_ids": [],
+        }
+        self._table.put_item(Item=item)
+        return Game(
+            game_id,
+            GameStatus.NotStarted,
+            StateName.GameSetup,
+            GameConfig(
+                quest_team_size,
+                roles,
+                assassination_attempts,
+            ),
+            [],
+            None,
+            None,
+        )
+
     def get_game(self, game_id: str) -> Game:
         response = self._table.get_item(Key={"pk": game_id, "sk": "game"})
         if "Item" not in response:
@@ -34,7 +69,6 @@ class DynamoDBRepository(Repository):
         item = response["Item"]
         game_config = GameConfig(
             quest_team_size={int(k): int(v) for k, v in item["config"]["quest_team_size"].items()},
-            max_round=item["config"]["max_round"],
             roles=item["config"]["roles"],
             assassination_attempts=item["config"]["assassination_attempts"],
         )
@@ -69,7 +103,6 @@ class DynamoDBRepository(Repository):
                 "quest_team_size": {
                     str(k): str(v) for k, v in game.config.quest_team_size.items()
                 },
-                "max_round": game.config.max_round,
                 "roles": {
                     role: [role for role in roles]
                     for role, roles in game.config.roles.items()

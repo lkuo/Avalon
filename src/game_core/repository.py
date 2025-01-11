@@ -15,6 +15,15 @@ from game_core.entities.round_vote import RoundVote
 class Repository(ABC):
 
     @abstractmethod
+    def put_game(
+        self,
+        quest_team_size: dict[int, int],
+        roles: dict[str, list[str]],
+        assassination_attempts: int
+    ) -> Game:
+        pass
+
+    @abstractmethod
     def get_game(self, game_id: str) -> Game:
         pass
 

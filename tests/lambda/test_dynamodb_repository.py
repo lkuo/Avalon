@@ -78,6 +78,62 @@ def dynamodb_repository():
     )
 
 
+def test_put_game(mocker, dynamodb_repository, dynamodb_table):
+    # Given
+    game_id = uuid.uuid4().hex
+    mock_uuid = mocker.patch("lambdas.dynamodb_repository.uuid")
+    mock_uuid.uuid4.return_value.hex = game_id
+    quest_team_size = {
+        1: 3,
+        2: 4,
+        3: 4,
+        5: 5,
+        6: 5,
+    }
+    roles = {
+        Role.Merlin.value: [Role.Morgana.value, Role.Assassin.value, Role.Oberon.value],
+        Role.Percival.value: [Role.Merlin.value, Role.Morgana.value],
+        Role.Villager.value: [],
+        Role.Mordred.value: [Role.Morgana.value, Role.Assassin.value, Role.Oberon.value],
+        Role.Morgana.value: [Role.Mordred.value, Role.Assassin.value, Role.Oberon.value],
+        Role.Assassin.value: [Role.Mordred.value, Role.Morgana.value, Role.Oberon.value],
+        Role.Oberon.value: []
+    }
+    assassination_attempts = 1
+
+    # When
+    game = dynamodb_repository.put_game(quest_team_size, roles, assassination_attempts)
+
+    # Then
+    item = dynamodb_table.get_item(Key={"pk": game_id, "sk": "game"})["Item"]
+    assert item["pk"] == game_id
+    assert item["sk"] == "game"
+    assert item["status"] == GameStatus.NotStarted.value
+    assert item["state"] == StateName.GameSetup.value
+    assert item["config"]["quest_team_size"] == {
+        str(k): str(v) for k, v in quest_team_size.items()
+    }
+    assert item["config"]["roles"] == {
+        role: [role for role in roles]
+        for role, roles in roles.items()
+    }
+    assert item["config"]["assassination_attempts"] == assassination_attempts
+    assert item["player_ids"] == []
+    assert "assassination_attempts" not in item
+    assert "result" not in item
+    assert game.id == game_id
+    assert game.status == GameStatus.NotStarted
+    assert game.state == StateName.GameSetup
+    assert game.config.quest_team_size == quest_team_size
+    assert game.config.roles == roles
+    assert game.config.assassination_attempts == assassination_attempts
+    assert game.player_ids == []
+    assert game.assassination_attempts is None
+    assert game.result is None
+
+
+
+
 def test_get_game(dynamodb_repository, dynamodb_table):
     # Given
     game_id = uuid.uuid4().hex
@@ -85,7 +141,6 @@ def test_get_game(dynamodb_repository, dynamodb_table):
     state = StateName.GameSetup
     config = {
         "quest_team_size": {1: 3, 2: 4, 3: 4, 4: 5, 5: 6},
-        "max_round": 5,
         "roles": {
             Role.Merlin.value: [Role.Percival.value, Role.Morgana.value],
             Role.Assassin.value: [Role.Mordred.value],
@@ -106,7 +161,6 @@ def test_get_game(dynamodb_repository, dynamodb_table):
             "quest_team_size": {
                 str(k): str(v) for k, v in config["quest_team_size"].items()
             },
-            "max_round": config["max_round"],
             "roles": {
                 role: [role for role in roles]
                 for role, roles in config["roles"].items()
@@ -125,7 +179,6 @@ def test_get_game(dynamodb_repository, dynamodb_table):
     assert game.status == status
     assert game.state == state
     assert game.config.quest_team_size == config["quest_team_size"]
-    assert game.config.max_round == config["max_round"]
     assert game.config.roles == config["roles"]
     assert game.config.assassination_attempts == config["assassination_attempts"]
     assert game.player_ids == player_ids
@@ -137,7 +190,6 @@ def test_update_game(dynamodb_repository, dynamodb_table):
     state = StateName.GameSetup
     config = {
         "quest_team_size": {1: 3, 2: 4, 3: 4, 4: 5, 5: 6},
-        "max_round": 5,
         "roles": {
             Role.Merlin.value: [Role.Percival.value, Role.Morgana.value],
             Role.Assassin.value: [Role.Mordred.value],
@@ -158,7 +210,6 @@ def test_update_game(dynamodb_repository, dynamodb_table):
             "quest_team_size": {
                 str(k): str(v) for k, v in config["quest_team_size"].items()
             },
-            "max_round": config["max_round"],
             "roles": {
                 role: [role for role in roles]
                 for role, roles in config["roles"].items()

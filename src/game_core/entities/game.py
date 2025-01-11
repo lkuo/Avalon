@@ -8,7 +8,6 @@ from game_core.constants.state_name import StateName
 @dataclass
 class GameConfig:
     quest_team_size: dict[int, int]
-    max_round: int
     roles: dict[str, list[str]]
     assassination_attempts: int
 
