@@ -9,7 +9,6 @@ from game_core.repository import Repository
 from game_core.services.event_service import EventService
 from game_core.services.player_service import PlayerService
 
-# todo: 1. add create game
 
 class GameService:
     def __init__(
