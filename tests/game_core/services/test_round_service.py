@@ -229,7 +229,9 @@ def test_handle_round_vote_cast(
     repository.get_player.assert_called_once_with(PLAYER_ID)
     repository.get_quest.assert_called_once_with(GAME_ID, quest_number)
     repository.get_round.assert_has_calls([call(GAME_ID, quest_number, round_number)])
-    repository.put_round_vote.assert_called_once_with(GAME_ID, quest_number, round_number, PLAYER_ID, VoteResult.Pass)
+    repository.put_round_vote.assert_called_once_with(
+        GAME_ID, quest_number, round_number, PLAYER_ID, VoteResult.Pass
+    )
     repository.get_round_votes.assert_any_call(GAME_ID, quest_number, round_number)
     updated_game_round = game_round
     updated_game_round.team_member_ids = [PLAYER_ID]
@@ -291,7 +293,9 @@ def test_handle_round_vote_cast_with_player_voted(
     game_round.result = None
     repository.get_round.return_value = game_round
     repository.get_round_votes.return_value = [
-        RoundVote("id", GAME_ID, PLAYER_ID, quest_number, round_number, VoteResult.Pass),
+        RoundVote(
+            "id", GAME_ID, PLAYER_ID, quest_number, round_number, VoteResult.Pass
+        ),
     ]
 
     # When

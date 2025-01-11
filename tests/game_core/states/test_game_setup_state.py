@@ -1,10 +1,10 @@
 import pytest
 
 from game_core.constants.action_type import ActionType
+from game_core.constants.state_name import StateName
 from game_core.entities.action import Action
 from game_core.services.player_service import PlayerService
 from game_core.states.game_setup_state import GameSetupState
-from game_core.constants.state_name import StateName
 
 ACTION_ID = "action_id"
 GAME_ID = "game_id"

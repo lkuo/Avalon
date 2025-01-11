@@ -1,13 +1,14 @@
-import pytest
 from unittest.mock import call
 
+import pytest
+
+from game_core.constants.event_type import EventType
 from game_core.constants.role import Role
+from game_core.constants.vote_result import VoteResult
+from game_core.entities.event import Event
 from game_core.entities.player import Player
 from game_core.repository import Repository
 from game_core.services.event_service import EventService
-from game_core.constants.event_type import EventType
-from game_core.constants.vote_result import VoteResult
-from game_core.entities.event import Event
 
 TIMESTAMP = "123456"
 GAME_ID = "test_game"

@@ -1,11 +1,11 @@
 import pytest
 
 from game_core.constants.action_type import ActionType
+from game_core.constants.state_name import StateName
 from game_core.entities.action import Action
 from game_core.services.quest_service import QuestService
 from game_core.states.end_game_state import EndGameState
 from game_core.states.quest_voting_state import QuestVotingState
-from game_core.constants.state_name import StateName
 from game_core.states.team_selection_state import TeamSelectionState
 
 QUEST_NUMBER = 3

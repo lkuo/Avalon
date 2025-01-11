@@ -1,13 +1,13 @@
 import pytest
 
 from game_core.constants.action_type import ActionType
+from game_core.constants.state_name import StateName
 from game_core.constants.vote_result import VoteResult
 from game_core.entities.action import Action
 from game_core.entities.round import Round
 from game_core.services.round_service import RoundService
 from game_core.states.quest_voting_state import QuestVotingState
 from game_core.states.round_voting_state import RoundVotingState
-from game_core.constants.state_name import StateName
 from game_core.states.team_selection_state import TeamSelectionState
 
 QUEST_NUMBER = 3
