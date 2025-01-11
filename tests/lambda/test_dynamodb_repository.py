@@ -800,3 +800,70 @@ def test_put_round_vote(dynamodb_repository, dynamodb_table):
     assert vote.round_number == round_number
     assert vote.player_id == player_id
     assert vote.result == result
+
+
+def test_put_connection_id(dynamodb_repository, dynamodb_table):
+    # Given
+    game_id = uuid.uuid4().hex
+    player_id = "player_id1"
+    connection_id = "connection_id1"
+
+    # When
+    dynamodb_repository.put_connection_id(game_id, player_id, connection_id)
+
+    # Then
+    res = dynamodb_table.get_item(
+        TableName=TABLE_NAME,
+        Key={"pk": game_id, "sk": f"connection_id_{player_id}"},
+    )
+    actual_connection = res["Item"]
+    assert actual_connection["pk"] == game_id
+    assert actual_connection["sk"] == f"connection_id_{player_id}"
+    assert actual_connection["connection_id"] == connection_id
+
+
+def test_get_connection_id(dynamodb_repository, dynamodb_table):
+    # Given
+    game_id = uuid.uuid4().hex
+    player_id = "player_id1"
+    connection_id = "connection_id1"
+    item = {
+        "pk": game_id,
+        "sk": f"connection_id_{player_id}",
+        "connection_id": connection_id,
+    }
+    dynamodb_table.put_item(Item=item)
+    dynamodb_table.put_item(Item={"pk": game_id, "sk": "game"})
+
+    # When
+    actual_connection_id = dynamodb_repository.get_connection_id(game_id, player_id)
+
+    # Then
+    assert actual_connection_id == connection_id
+
+
+def test_get_connection_ids(dynamodb_repository, dynamodb_table):
+    # Given
+    game_id = uuid.uuid4().hex
+    player_ids = ["player_id1", "player_id2", "player_id3"]
+    connection_ids = ["connection_id1", "connection_id2", "connection_id3"]
+    items = [
+        {
+            "pk": game_id,
+            "sk": f"connection_id_{player_id}",
+            "connection_id": connection_id,
+        }
+        for player_id, connection_id in zip(player_ids, connection_ids)
+    ]
+    items.append({
+        "pk": game_id,
+        "sk": "game",
+    })
+    for item in items:
+        dynamodb_table.put_item(Item=item)
+
+    # When
+    actual_connection_ids = dynamodb_repository.get_connection_ids(game_id)
+
+    # Then
+    assert set(actual_connection_ids) == set(connection_ids)

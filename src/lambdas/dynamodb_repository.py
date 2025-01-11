@@ -492,3 +492,32 @@ class DynamoDBRepository(Repository):
             )
             for item in items
         ]
+
+    def put_connection_id(self, game_id: str, player_id: str, connection_id: str) -> None:
+        item = {
+            "pk": game_id,
+            "sk": f"connection_id_{player_id}",
+            "connection_id": connection_id,
+        }
+        self._table.put_item(Item=item)
+
+    def get_connection_id(self, game_id: str, player_id: str) -> str:
+        key = {
+            "pk": game_id,
+            "sk": f"connection_id_{player_id}",
+        }
+        response = self._table.get_item(Key=key)
+        if "Item" not in response:
+            raise ValueError(f"Connection ID {game_id}_{player_id} not found")
+        return response["Item"]["connection_id"]
+
+    def get_connection_ids(self, game_id: str) -> list[str]:
+        key_condition_expression = "pk = :pk AND begins_with(sk, :sk_prefix)"
+        expression_attribute_values = {":pk": game_id, ":sk_prefix": "connection_id_"}
+        response = self._table.query(
+            KeyConditionExpression=key_condition_expression,
+            ExpressionAttributeValues=expression_attribute_values
+        )
+        items = response["Items"]
+        return [item["connection_id"] for item in items]
+

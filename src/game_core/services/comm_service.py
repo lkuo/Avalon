@@ -1,5 +1,4 @@
 from abc import abstractmethod
-from typing import Optional
 
 from game_core.entities.event import Event
 
@@ -7,7 +6,7 @@ from game_core.entities.event import Event
 class CommService:
 
     @abstractmethod
-    def broadcast(self, event: Event, player_ids: Optional[list[str]] = None) -> None:
+    def broadcast(self, event: Event) -> None:
         pass
 
     @abstractmethod

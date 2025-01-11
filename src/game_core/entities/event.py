@@ -12,3 +12,13 @@ class Event:
     recipients: list[str]  # empty list indicates a public event visible to everyone
     payload: dict[str, Any]
     timestamp: str
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "game_id": self.game_id,
+            "type": self.type.value,
+            "recipients": self.recipients,
+            "payload": self.payload,
+            "timestamp": self.timestamp,
+        }
