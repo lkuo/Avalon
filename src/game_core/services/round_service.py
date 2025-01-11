@@ -95,25 +95,16 @@ class RoundService:
         round_number = payload["round_number"]
         game_id = action.game_id
         player = self._repository.get_player(player_id)
-        if not player:
-            raise ValueError(f"Player {player_id} not found")
         quest = self._repository.get_quest(game_id, quest_number)
-        if not quest:
-            raise ValueError(f"Quest not exist or completed{quest}")
         if quest.result:
             raise ValueError(f"Quest {quest_number} already completed {quest}")
         game_round = self._repository.get_round(game_id, quest_number, round_number)
-        if not game_round:
-            raise ValueError(f"Round not exist {game_round}")
         if game_round.result:
             raise ValueError(f"Round {round_number} already completed {game_round}")
-        round_vote = self._repository.get_round_vote(
-            game_id, quest_number, round_number, player_id
-        )
-        if round_vote:
-            raise ValueError(
-                f"Player {player_id} already voted for quest {quest_number} round {round_number}"
-            )
+        round_votes = self._repository.get_round_votes(game_id, quest_number, round_number)
+        voted_player_ids = [rv.player_id for rv in round_votes]
+        if player_id in voted_player_ids:
+            raise ValueError(f"Player {player_id} already voted for quest {quest_number} round {round_number}")
 
     def is_round_vote_completed(
         self, game_id: str, quest_number: int, round_number: int

@@ -23,7 +23,7 @@ class GameService:
 
     def handle_start_game(self, action: Action) -> None:
         game_id = action.game_id
-        game = self._get_game(game_id)
+        game = self.get_game(game_id)
         if game.status != GameStatus.NotStarted:
             raise ValueError(
                 f"Game {game_id} is not in NotStarted state, got {game.status}"
@@ -41,7 +41,7 @@ class GameService:
         self._repository.update_game(game)
         self._event_service.create_game_started_events(game_id, players)
 
-    def _get_game(self, game_id: str) -> Game:
+    def get_game(self, game_id: str) -> Game:
         game = self._repository.get_game(game_id)
         if not game:
             raise ValueError(f"Game {game_id} not found")
@@ -49,7 +49,7 @@ class GameService:
         return game
 
     def get_assassination_attempts(self, game_id: str) -> int:
-        game = self._get_game(game_id)
+        game = self.get_game(game_id)
         game_config = game.config
         if not game_config:
             raise ValueError(f"Game {game_id} config not found")
@@ -83,7 +83,7 @@ class GameService:
         SubmitAssassinationTargetPayload(**action.payload)
         target = self._player_service.get_player(action.payload["target_id"])
         attempts = self.get_assassination_attempts(action.game_id)
-        game = self._get_game(action.game_id)
+        game = self.get_game(action.game_id)
         game.assassination_attempts = attempts - 1
         self._repository.update_game(game)
         is_successful = target.role == Role.Merlin
@@ -102,7 +102,7 @@ class GameService:
         self._event_service.create_game_ended_event(game_id, player_roles)
 
     def is_game_finished(self, game_id: str) -> bool:
-        game = self._get_game(game_id)
+        game = self.get_game(game_id)
         return game.status == GameStatus.Finished
 
 

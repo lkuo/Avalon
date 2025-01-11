@@ -4,6 +4,7 @@ from game_core.constants.action_type import ActionType
 from game_core.constants.vote_result import VoteResult
 from game_core.entities.action import Action
 from game_core.entities.quest import Quest
+from game_core.entities.quest_vote import QuestVote
 from game_core.repository import Repository
 from game_core.services.event_service import EventService
 from game_core.services.player_service import PlayerService
@@ -218,7 +219,21 @@ def test_handle_quest_vote_cast_with_quest_not_found(
     quest_service, player_service, cast_quest_vote_action, repository
 ):
     # Given
-    repository.get_quest.return_value = None
+    repository.get_quest.side_effect = ValueError()
+
+    # When
+    with pytest.raises(ValueError):
+        quest_service.handle_cast_quest_vote(cast_quest_vote_action)
+
+    # Then
+    repository.put_quest_vote.assert_not_called()
+
+
+def test_handle_quest_vote_cast_with_player_voted(
+    quest_service, player_service, cast_quest_vote_action, repository
+):
+    # Given
+    repository.get_quest_votes.return_value = [QuestVote("id", GAME_ID, PLAYER_ID, QUEST_NUMBER, VoteResult.Fail)]
 
     # When
     with pytest.raises(ValueError):

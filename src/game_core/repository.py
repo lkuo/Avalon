@@ -87,12 +87,6 @@ class Repository(ABC):
         pass
 
     @abstractmethod
-    def get_round_vote(
-        self, game_id: str, quest_number: int, round_number: int, player_id: str
-    ) -> RoundVote:
-        pass
-
-    @abstractmethod
     def get_round_votes(
         self, game_id: str, quest_number: int, round_number: int
     ) -> list[RoundVote]:

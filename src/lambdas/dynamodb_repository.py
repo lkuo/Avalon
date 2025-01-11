@@ -450,26 +450,6 @@ class DynamoDBRepository(Repository):
             result=vote_result,
         )
 
-    def get_round_vote(
-        self, game_id: str, quest_number: int, round_number: int, player_id: str
-    ) -> RoundVote:
-        key = {
-            "pk": game_id,
-            "sk": f"vote_round_{quest_number}_{round_number}_{player_id}",
-        }
-        response = self._table.get_item(Key=key)
-        if "Item" not in response:
-            raise ValueError(f"Round vote {game_id}_{quest_number}_{round_number}_{player_id} not found")
-        item = response["Item"]
-        return RoundVote(
-            id=f"{game_id}_vote_round_{quest_number}_{round_number}_{player_id}",
-            game_id=game_id,
-            quest_number=quest_number,
-            round_number=round_number,
-            player_id=player_id,
-            result=VoteResult(item["result"]),
-        )
-
     def get_round_votes(
         self, game_id: str, quest_number: int, round_number: int
     ) -> list[RoundVote]:

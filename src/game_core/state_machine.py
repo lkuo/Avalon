@@ -67,4 +67,7 @@ class StateMachine:
         if next_state != self._current_state:
             self._current_state.on_exit()
             self._current_state = next_state.on_enter() or next_state
-            # todo persist state when updated
+
+        game = self._repository.get_game(self._game_id)
+        game.state = self._current_state.name
+        self._repository.update_game(game)

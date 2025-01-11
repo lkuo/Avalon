@@ -75,8 +75,11 @@ class QuestService:
         quest_number = payload.get("quest_number")
         game_id = action.game_id
         self._player_service.get_player(player_id)
-        self.get_quest(game_id, quest_number)
-        # todo add validation for player has not voted yet
+        self._repository.get_quest(game_id, quest_number)
+        quest_votes = self._repository.get_quest_votes(game_id, quest_number)
+        voted_player_ids = [qv.player_id for qv in quest_votes]
+        if player_id in voted_player_ids:
+            raise ValueError(f"Player {player_id} already voted for quest {quest_number}")
 
     def is_quest_vote_completed(self, game_id: str, quest_number: int) -> bool:
         quest = self._repository.get_quest(game_id, quest_number)
@@ -145,12 +148,6 @@ class QuestService:
     def complete_current_quest(self, game_id: str, result: VoteResult) -> Quest:
         quest = self.get_current_quest(game_id)
         return self.complete_quest(game_id, quest, result)
-
-    def get_quest(self, game_id: str, quest_number: int) -> Quest:
-        quest = self._repository.get_quest(game_id, quest_number)
-        if not quest:
-            raise ValueError(f"Quest {quest_number} not found")
-        return quest
 
 
 class CastQuestVotePayload(BaseModel):

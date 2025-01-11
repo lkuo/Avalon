@@ -701,35 +701,6 @@ def test_update_round(dynamodb_repository, dynamodb_table):
     assert res["Item"]["sk"] == f"round_{quest_number}_{round_number}"
 
 
-def test_get_round_vote(dynamodb_repository, dynamodb_table):
-    # Given
-    game_id = uuid.uuid4().hex
-    quest_number = 2
-    round_number = 3
-    player_id = "player_id1"
-    result = VoteResult.Fail
-    item = {
-        "pk": game_id,
-        "sk": f"vote_round_{quest_number}_{round_number}_{player_id}",
-        "quest_number": quest_number,
-        "round_number": round_number,
-        "player_id": player_id,
-        "result": result.value,
-    }
-    dynamodb_table.put_item(Item=item)
-
-    # When
-    vote = dynamodb_repository.get_round_vote(game_id, quest_number, round_number, player_id)
-
-    # Then
-    assert vote.id == f"{game_id}_vote_round_{quest_number}_{round_number}_{player_id}"
-    assert vote.game_id == game_id
-    assert vote.quest_number == quest_number
-    assert vote.round_number == round_number
-    assert vote.player_id == player_id
-    assert vote.result == result
-
-
 def test_get_round_votes(dynamodb_repository, dynamodb_table):
     # Given
     game_id = uuid.uuid4().hex
