@@ -30,7 +30,7 @@ class Repository(ABC):
         pass
 
     @abstractmethod
-    def put_player(self, game_id: str, name: str, secret: str) -> Player:
+    def put_player(self, player_id: str, game_id: str, name: str, secret: str) -> Player:
         pass
 
     @abstractmethod
