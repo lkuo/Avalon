@@ -52,7 +52,7 @@ def test_handle_player_joined(
     player_service.handle_join_game(join_game_action)
 
     # Then
-    repository.put_player.assert_called_once_with(GAME_ID, PLAYER_NAME, PLAYER_SECRET)
+    repository.put_player.assert_called_once_with(PLAYER_ID, GAME_ID, PLAYER_NAME, PLAYER_SECRET)
     event_service.create_player_joined_event.assert_called_once_with(
         PLAYER_ID, GAME_ID, PLAYER_NAME
     )

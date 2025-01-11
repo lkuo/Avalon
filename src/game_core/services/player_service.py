@@ -33,9 +33,10 @@ class PlayerService:
 
     def _save_player(self, action: Action) -> Player:
         payload = JoinGamePayload(**action.payload)
+        player_id = action.player_id
         game_id = action.game_id
         secret = str(uuid.uuid4())
-        return self._repository.put_player(game_id, payload.name, secret)
+        return self._repository.put_player(player_id, game_id, payload.name, secret)
 
     def assign_roles(self, game_id: str, roles: dict[str, list[str]]) -> list[Player]:
         roles = {Role(k): [Role(v) for v in vals] for k, vals in roles.items()}

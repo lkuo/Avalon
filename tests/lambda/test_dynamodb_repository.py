@@ -250,31 +250,29 @@ def test_get_player(dynamodb_repository, dynamodb_table):
     assert player.known_player_ids == []
 
 
-def test_put_player(mocker, dynamodb_table, dynamodb_repository):
+def test_put_player(dynamodb_table, dynamodb_repository):
     # Given
-    player_uuid = "playerId"
-    mock_uuid = mocker.patch("lambdas.dynamodb_repository.uuid")
-    mock_uuid.uuid4.return_value.hex = player_uuid
+    player_id = uuid.uuid4().hex
     game_id = uuid.uuid4().hex
     name = "player 2"
     secret = uuid.uuid4().hex
 
     # When
-    player = dynamodb_repository.put_player(game_id, name, secret)
+    player = dynamodb_repository.put_player(player_id, game_id, name, secret)
 
     # Then
     res = dynamodb_table.get_item(
         TableName=TABLE_NAME,
-        Key={"pk": game_id, "sk": f"player_{player_uuid}"},
+        Key={"pk": game_id, "sk": f"player_{player_id}"},
     )
     actual_player = res["Item"]
     assert actual_player["pk"] == game_id
-    assert actual_player["sk"] == f"player_{player_uuid}"
+    assert actual_player["sk"] == f"player_{player_id}"
     assert actual_player["name"] == name
     assert actual_player["secret"] == secret
     assert actual_player["role"] is None
     assert actual_player["known_player_ids"] == []
-    assert player.id == f"{game_id}_player_{player_uuid}"
+    assert player.id == f"{game_id}_player_{player_id}"
     assert player.game_id == game_id
     assert player.name == name
     assert player.secret == secret

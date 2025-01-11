@@ -131,11 +131,10 @@ class DynamoDBRepository(Repository):
             known_player_ids=item.get("known_player_ids", []),
         )
 
-    def put_player(self, game_id: str, name: str, secret: str) -> Player:
-        player_uuid = uuid.uuid4().hex
+    def put_player(self, player_id: str, game_id: str, name: str, secret: str) -> Player:
         item = {
             "pk": game_id,
-            "sk": f"player_{player_uuid}",
+            "sk": f"player_{player_id}",
             "name": name,
             "secret": secret,
             "role": None,
@@ -143,7 +142,7 @@ class DynamoDBRepository(Repository):
         }
         self._table.put_item(Item=item)
         return Player(
-            id=f"{game_id}_player_{player_uuid}",
+            id=f"{game_id}_player_{player_id}",
             game_id=game_id,
             name=name,
             secret=secret,
@@ -520,4 +519,3 @@ class DynamoDBRepository(Repository):
         )
         items = response["Items"]
         return [item["connection_id"] for item in items]
-
