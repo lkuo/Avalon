@@ -39,6 +39,10 @@ class Repository(ABC):
         pass
 
     @abstractmethod
+    def get_events(self, game_id: str, player_id: str) -> list[Event]:
+        pass
+
+    @abstractmethod
     def put_player(self, player_id: str, game_id: str, name: str, secret: str) -> Player:
         pass
 

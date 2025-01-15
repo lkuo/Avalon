@@ -148,6 +148,30 @@ class DynamoDBRepository(Repository):
             timestamp=timestamp,
         )
 
+    def get_events(self, game_id: str, player_id: str) -> list[Event]:
+        response = self._table.query(
+            KeyConditionExpression="pk = :pk and begins_with(sk, :sk)",
+            ExpressionAttributeValues={
+                ":pk": game_id,
+                ":sk": "event_",
+            },
+        )
+        events = []
+        for item in response["Items"]:
+            recipients = item.get("recipients", [])
+            if recipients == [] or player_id in recipients:
+                events.append(
+                    Event(
+                        id=f"{item["pk"]}_{item["sk"]}",
+                        game_id=item["pk"],
+                        type=EventType(item["type"]),
+                        recipients=item["recipients"],
+                        payload=item["payload"],
+                        timestamp=item["timestamp"],
+                    )
+                )
+        return events
+
     def get_player(self, player_id: str) -> Player:
         # player_id = gameId_player_playerId
         game_id, sk = player_id.split("_", 1)

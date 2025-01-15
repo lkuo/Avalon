@@ -94,10 +94,22 @@ def test_put_game(mocker, dynamodb_repository, dynamodb_table):
         Role.Merlin.value: [Role.Morgana.value, Role.Assassin.value, Role.Oberon.value],
         Role.Percival.value: [Role.Merlin.value, Role.Morgana.value],
         Role.Villager.value: [],
-        Role.Mordred.value: [Role.Morgana.value, Role.Assassin.value, Role.Oberon.value],
-        Role.Morgana.value: [Role.Mordred.value, Role.Assassin.value, Role.Oberon.value],
-        Role.Assassin.value: [Role.Mordred.value, Role.Morgana.value, Role.Oberon.value],
-        Role.Oberon.value: []
+        Role.Mordred.value: [
+            Role.Morgana.value,
+            Role.Assassin.value,
+            Role.Oberon.value,
+        ],
+        Role.Morgana.value: [
+            Role.Mordred.value,
+            Role.Assassin.value,
+            Role.Oberon.value,
+        ],
+        Role.Assassin.value: [
+            Role.Mordred.value,
+            Role.Morgana.value,
+            Role.Oberon.value,
+        ],
+        Role.Oberon.value: [],
     }
     assassination_attempts = 1
 
@@ -114,8 +126,7 @@ def test_put_game(mocker, dynamodb_repository, dynamodb_table):
         str(k): str(v) for k, v in quest_team_size.items()
     }
     assert item["config"]["roles"] == {
-        role: [role for role in roles]
-        for role, roles in roles.items()
+        role: [role for role in roles] for role, roles in roles.items()
     }
     assert item["config"]["assassination_attempts"] == assassination_attempts
     assert item["player_ids"] == []
@@ -130,8 +141,6 @@ def test_put_game(mocker, dynamodb_repository, dynamodb_table):
     assert game.player_ids == []
     assert game.assassination_attempts is None
     assert game.result is None
-
-
 
 
 def test_get_game(dynamodb_repository, dynamodb_table):
@@ -273,6 +282,58 @@ def test_put_event(mocker, dynamodb_repository, dynamodb_table):
     assert event.timestamp == timestamp
 
 
+def test_get_events(dynamodb_repository, dynamodb_table):
+    # Given
+    game_id = uuid.uuid4().hex
+    player_id = "player_id1"
+    item1 = {
+        "pk": game_id,
+        "sk": f"event_{uuid.uuid4().hex}",
+        "type": EventType.GameStarted.value,
+        "recipients": [player_id],
+        "payload": {"key": "value", "key2": 2, "key3": [1, 2, 3], "key4": False},
+        "timestamp": "2021-09-01T00:00:00Z",
+    }
+    dynamodb_table.put_item(Item=item1)
+    item2 = {
+        "pk": game_id,
+        "sk": f"event_{uuid.uuid4().hex}",
+        "type": EventType.GameStarted.value,
+        "recipients": [],
+        "payload": {},
+        "timestamp": "2021-09-01T00:00:01Z",
+    }
+    dynamodb_table.put_item(Item=item2)
+    item3 = {
+        "pk": game_id,
+        "sk": f"event_{uuid.uuid4().hex}",
+        "type": EventType.GameStarted.value,
+        "recipients": ["not_matched_player_id"],
+        "payload": {},
+        "timestamp": "2021-09-01T00:00:01Z",
+    }
+    dynamodb_table.put_item(Item=item3)
+
+    # When
+    events = dynamodb_repository.get_events(game_id, player_id)
+
+    # Then
+    events.sort(key=lambda x: x.timestamp)
+    assert len(events) == 2
+    assert events[0].id == f"{game_id}_{item1["sk"]}"
+    assert events[0].game_id == game_id
+    assert events[0].type == EventType(item1["type"])
+    assert events[0].recipients == [player_id]
+    assert events[0].payload == item1["payload"]
+    assert events[0].timestamp == item1["timestamp"]
+    assert events[1].id == f"{game_id}_{item2["sk"]}"
+    assert events[1].game_id == game_id
+    assert events[1].type == EventType(item2["type"])
+    assert events[1].recipients == []
+    assert events[1].payload == item2["payload"]
+    assert events[1].timestamp == item2["timestamp"]
+
+
 def test_get_player(dynamodb_repository, dynamodb_table):
     # Given
     game_id = uuid.uuid4().hex
@@ -390,10 +451,12 @@ def test_get_players(dynamodb_repository, dynamodb_table):
         }
         for i, player_id in enumerate(player_ids, 1)
     ]
-    items.append({
-        "pk": game_id,
-        "sk": "game",
-    })
+    items.append(
+        {
+            "pk": game_id,
+            "sk": "game",
+        }
+    )
     for item in items:
         dynamodb_table.put_item(Item=item)
 
@@ -452,10 +515,12 @@ def test_get_quests(dynamodb_repository, dynamodb_table):
         for quest_number in quest_numbers
     ]
     items[1]["result"] = VoteResult.Fail.value
-    items.append({
-        "pk": game_id,
-        "sk": "game",
-    })
+    items.append(
+        {
+            "pk": game_id,
+            "sk": "game",
+        }
+    )
     for item in items:
         dynamodb_table.put_item(Item=item)
 
@@ -469,7 +534,9 @@ def test_get_quests(dynamodb_repository, dynamodb_table):
         assert quest.id == f"{game_id}_quest_{quest_numbers[i]}"
         assert quest.game_id == game_id
         assert quest.quest_number == quest_numbers[i]
-        assert quest.result == (VoteResult(items[i]["result"]) if items[i]["result"] else None)
+        assert quest.result == (
+            VoteResult(items[i]["result"]) if items[i]["result"] else None
+        )
         assert quest.team_member_ids == []
 
 
@@ -534,7 +601,7 @@ def test_get_quest(dynamodb_repository, dynamodb_table):
     assert quest.team_member_ids == team_player_ids
 
 
-def test_put_quest_vote(mocker, dynamodb_repository, dynamodb_table):
+def test_put_quest_vote(dynamodb_repository, dynamodb_table):
     # Given
     game_id = uuid.uuid4().hex
     quest_number = 1
@@ -542,7 +609,9 @@ def test_put_quest_vote(mocker, dynamodb_repository, dynamodb_table):
     is_approved = True
 
     # When
-    vote = dynamodb_repository.put_quest_vote(game_id, quest_number, player_id, is_approved)
+    vote = dynamodb_repository.put_quest_vote(
+        game_id, quest_number, player_id, is_approved
+    )
 
     # Then
     res = dynamodb_table.get_item(
@@ -554,7 +623,9 @@ def test_put_quest_vote(mocker, dynamodb_repository, dynamodb_table):
     assert actual_vote["sk"] == f"vote_quest_{quest_number}_{player_id}"
     assert actual_vote["player_id"] == player_id
     assert actual_vote["quest_number"] == quest_number
-    assert actual_vote["result"] == (VoteResult.Pass.value if is_approved else VoteResult.Fail.value)
+    assert actual_vote["result"] == (
+        VoteResult.Pass.value if is_approved else VoteResult.Fail.value
+    )
     assert vote.id == f"{game_id}_vote_quest_{quest_number}_{player_id}"
     assert vote.game_id == game_id
     assert vote.quest_number == quest_number
@@ -577,10 +648,12 @@ def test_get_quest_votes(dynamodb_repository, dynamodb_table):
         }
         for i, player_id in enumerate(player_ids)
     ]
-    items.append({
-        "pk": game_id,
-        "sk": "game",
-    })
+    items.append(
+        {
+            "pk": game_id,
+            "sk": "game",
+        }
+    )
     for item in items:
         dynamodb_table.put_item(Item=item)
 
@@ -619,7 +692,7 @@ def test_get_rounds(dynamodb_repository, dynamodb_table):
             "round_number": 2,
             "leader_id": "player_id3",
             "team_member_ids": ["player_id2", "player_id3"],
-        }
+        },
     ]
     for item in items:
         dynamodb_table.put_item(Item=item)
@@ -654,7 +727,9 @@ def test_put_round(dynamodb_repository, dynamodb_table):
     leader_id = "player_id1"
 
     # When
-    game_round = dynamodb_repository.put_round(game_id, quest_number, round_number, leader_id)
+    game_round = dynamodb_repository.put_round(
+        game_id, quest_number, round_number, leader_id
+    )
 
     # Then
     res = dynamodb_table.get_item(
@@ -769,10 +844,12 @@ def test_get_round_votes(dynamodb_repository, dynamodb_table):
         }
         for i, player_id in enumerate(player_ids)
     ]
-    items.append({
-        "pk": game_id,
-        "sk": "game",
-    })
+    items.append(
+        {
+            "pk": game_id,
+            "sk": "game",
+        }
+    )
     for item in items:
         dynamodb_table.put_item(Item=item)
 
@@ -783,7 +860,10 @@ def test_get_round_votes(dynamodb_repository, dynamodb_table):
     assert len(votes) == 3
     votes.sort(key=lambda v: v.id)
     for i, vote in enumerate(votes):
-        assert vote.id == f"{game_id}_vote_round_{quest_number}_{round_number}_{player_ids[i]}"
+        assert (
+            vote.id
+            == f"{game_id}_vote_round_{quest_number}_{round_number}_{player_ids[i]}"
+        )
         assert vote.game_id == game_id
         assert vote.quest_number == quest_number
         assert vote.round_number == round_number
@@ -800,12 +880,17 @@ def test_put_round_vote(dynamodb_repository, dynamodb_table):
     result = VoteResult.Fail
 
     # When
-    vote = dynamodb_repository.put_round_vote(game_id, quest_number, round_number, player_id, result)
+    vote = dynamodb_repository.put_round_vote(
+        game_id, quest_number, round_number, player_id, result
+    )
 
     # Then
     res = dynamodb_table.get_item(
         TableName=TABLE_NAME,
-        Key={"pk": game_id, "sk": f"vote_round_{quest_number}_{round_number}_{player_id}"},
+        Key={
+            "pk": game_id,
+            "sk": f"vote_round_{quest_number}_{round_number}_{player_id}",
+        },
     )
     actual_vote = res["Item"]
     assert actual_vote["pk"] == game_id
@@ -875,10 +960,12 @@ def test_get_connection_ids(dynamodb_repository, dynamodb_table):
         }
         for player_id, connection_id in zip(player_ids, connection_ids)
     ]
-    items.append({
-        "pk": game_id,
-        "sk": "game",
-    })
+    items.append(
+        {
+            "pk": game_id,
+            "sk": "game",
+        }
+    )
     for item in items:
         dynamodb_table.put_item(Item=item)
 
