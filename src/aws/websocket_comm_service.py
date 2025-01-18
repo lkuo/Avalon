@@ -5,7 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 import boto3
 
 from game_core.entities.event import Event
-from game_core.services.comm_service import CommService
+from game_core.comm_service import CommService
 from aws.dynamodb_repository import DynamoDBRepository
 
 log = logging.getLogger(__name__)

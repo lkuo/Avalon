@@ -5,7 +5,7 @@ from game_core.constants.state_name import StateName
 from game_core.entities.action import Action
 from game_core.entities.game import Game
 from game_core.repository import Repository
-from game_core.services.comm_service import CommService
+from game_core.comm_service import CommService
 from game_core.state_machine import StateMachine
 from game_core.states.end_game_state import EndGameState
 from game_core.states.game_setup_state import GameSetupState

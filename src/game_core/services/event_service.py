@@ -6,7 +6,7 @@ from game_core.constants.vote_result import VoteResult
 from game_core.entities.event import Event
 from game_core.entities.player import Player
 from game_core.repository import Repository
-from game_core.services.comm_service import CommService
+from game_core.comm_service import CommService
 
 
 class EventService:
