@@ -9,10 +9,8 @@ Globals:
     Tracing: Active
     Environment:
       Variables:
-        DDB_NAME: !Ref DdbTableName
-        EVENT_BUS_NAME: !Ref EventBusName
+        DYNAMODB_TABLE: !Ref DdbTableName
         WEBSOCKET_ENDPOINT: !Sub "https://${AvalonWebSocket}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
-        JWT_SECRET_NAME: !Ref JwtSecretName
     Layers:
       - Ref: CommonLayer
   Api:
@@ -37,12 +35,6 @@ Parameters:
   DdbTableName:
     Type: String
     Default: Avalon
-  EventBusName:
-    Type: String
-    Default: AvalonEventBus
-  JwtSecretName:
-    Type: String
-    Default: avalonDevJwtSecret
 
 Resources:
 
@@ -139,15 +131,6 @@ Resources:
       Cors: "'*'"
       EndpointConfiguration:
         Type: REGIONAL
-      Auth:
-        DefaultAuthorizer: LambdaRequestAuthorizer
-        Authorizers:
-          LambdaRequestAuthorizer:
-            FunctionPayloadType: REQUEST
-            FunctionArn: !GetAtt AuthorizerFunction.Arn
-            Identity:
-              Header: IdentityHeader
-              ReauthorizeEvery: 0
 
   ### WebSocket ###
   WebSocketLambdaAuthorizer:
@@ -234,37 +217,12 @@ Resources:
       RetentionInDays: 7
 
   ### Functions ###
-  AuthorizerFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ../lambdas/authorizer/
-      Handler: index.authorizerHandler
-      Runtime: nodejs20.x
-      LoggingConfig:
-        LogGroup: !Ref AuthorizerFunctionLogGroup
-      Policies:
-        - DynamoDBReadPolicy:
-            TableName: !Ref DynamodbTable
-  AuthorizerFunctionPermission:
-    Type: AWS::Lambda::Permission
-    DependsOn:
-      - AvalonWebSocket
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !GetAtt AuthorizerFunction.Arn
-      Principal: apigateway.amazonaws.com
-  AuthorizerFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub "/aws/apigateway/api/avalon-${StageName}-AuthorizerFunction"
-      RetentionInDays: 7
-
   CreateGameFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ../lambdas/createGame/
-      Handler: index.createGameHandler
-      Runtime: nodejs20.x
+      CodeUri: src/lambdas/create_game/
+      Handler: create_game.lambda_handler
+      Runtime: python3.12
       LoggingConfig:
         LogGroup: !Ref CreateGameFunctionLogGroup
       Policies:
@@ -331,11 +289,11 @@ Resources:
         - DynamoDBWritePolicy:
             TableName: !Ref DynamodbTable
         - Statement:
-          - Effect: Allow
-            Action:
-              - "secretsmanager:GetSecretValue"
-            Resource:
-              - "arn:aws:secretsmanager:us-east-2:137230235550:secret:avalonDevJwtSecret-Y83b0j"
+            - Effect: Allow
+              Action:
+                - "secretsmanager:GetSecretValue"
+              Resource:
+                - "arn:aws:secretsmanager:us-east-2:137230235550:secret:avalonDevJwtSecret-Y83b0j"
       Events:
         JoinGame:
           Type: Api
@@ -374,11 +332,11 @@ Resources:
         - DynamoDBWritePolicy:
             TableName: !Ref DynamodbTable
         - Statement:
-          - Effect: Allow
-            Action:
-              - events:PutEvents
-            Resource:
-              - !GetAtt EventBus.Arn
+            - Effect: Allow
+              Action:
+                - events:PutEvents
+              Resource:
+                - !GetAtt EventBus.Arn
   OnConnectInvokeFunctionPermission:
     Type: AWS::Lambda::Permission
     DependsOn:
@@ -660,11 +618,11 @@ Resources:
   SubmitNominationFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ../lambdas/submitNomination/
-      Handler: index.submitNominationHandler
-      Runtime: nodejs20.x
+      CodeUri: src/lambdas/create_game/
+      Handler: create_game.lambda_handler
+      Runtime: python3.9
       LoggingConfig:
-        LogGroup: !Ref SubmitNominationFunctionLogGroup
+        LogGroup: !Ref CreateGameFunctionLogGroup
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref DynamodbTable

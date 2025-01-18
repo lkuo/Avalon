@@ -2,9 +2,8 @@ import json
 import logging
 import os
 
-from pydantic import BaseModel
-
 from aws.dynamodb_repository import DynamoDBRepository
+from game_core.constants.config import DEFAULT_QUEST_TEAM_SIZE, KNOWN_ROLES, DEFAULT_ASSASSINATION_ATTEMPTS
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
@@ -18,8 +17,13 @@ def lambda_handler(event, context):
         region = os.environ['AWS_REGION']
         repository = DynamoDBRepository(table_name, region)
         body = json.loads(event.get("body", "{}"))
-        payload = CreateGamePayload(**body)
-        game = repository.put_game(payload.quest_team_size, payload.roles, payload.assassination_attempts)
+        team_size = int(body.get("team_size"))
+        if not team_size:
+            raise ValueError("team_size is required")
+        team_sizes = set(DEFAULT_QUEST_TEAM_SIZE.keys())
+        if team_size not in team_sizes:
+            raise ValueError(f"team_size must be one of {team_sizes}")
+        game = repository.put_game(DEFAULT_QUEST_TEAM_SIZE[team_size], KNOWN_ROLES, DEFAULT_ASSASSINATION_ATTEMPTS)
         return {
             "statusCode": 200,
             "body": json.dumps({"game_id": game.id}),
@@ -30,9 +34,3 @@ def lambda_handler(event, context):
             "statusCode": 500,
             "body": json.dumps({"error": str(e)}),
         }
-
-
-class CreateGamePayload(BaseModel):
-    quest_team_size: dict[int, int]
-    roles: dict[str, list[str]]
-    assassination_attempts: int
