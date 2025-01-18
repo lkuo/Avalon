@@ -4,7 +4,7 @@ import os
 
 from pydantic import BaseModel
 
-from lambdas.dynamodb_repository import DynamoDBRepository
+from aws.dynamodb_repository import DynamoDBRepository
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()

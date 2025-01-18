@@ -1,7 +1,7 @@
 import pytest
 
-from lambdas.dynamodb_repository import DynamoDBRepository
-from lambdas.on_connect import lambda_handler
+from aws.dynamodb_repository import DynamoDBRepository
+from aws.lambdas.on_connect import lambda_handler
 
 GAME_ID = "game_id"
 TABLE_NAME = "table_name"
@@ -22,7 +22,7 @@ def repository(mocker):
 
 @pytest.fixture(autouse=True)
 def dynamodb_repository_class(mocker, repository):
-    mocker.patch('lambdas.on_connect.DynamoDBRepository', return_value=repository)
+    mocker.patch('aws.lambdas.on_connect.DynamoDBRepository', return_value=repository)
 
 
 @pytest.fixture

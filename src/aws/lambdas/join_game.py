@@ -6,8 +6,8 @@ import uuid
 from game_core.constants.action_type import ActionType
 from game_core.entities.action import Action
 from game_core.state_machine import StateMachine
-from lambdas.dynamodb_repository import DynamoDBRepository
-from lambdas.websocket_comm_service import WebSocketCommService
+from aws.dynamodb_repository import DynamoDBRepository
+from aws.websocket_comm_service import WebSocketCommService
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()

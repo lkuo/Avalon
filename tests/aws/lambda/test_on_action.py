@@ -6,9 +6,9 @@ import pytest
 from game_core.constants.action_type import ActionType
 from game_core.entities.action import Action
 from game_core.state_machine import StateMachine
-from lambdas.dynamodb_repository import DynamoDBRepository
-from lambdas.on_action import lambda_handler
-from lambdas.websocket_comm_service import WebSocketCommService
+from aws.dynamodb_repository import DynamoDBRepository
+from aws.lambdas.on_action import lambda_handler
+from aws.websocket_comm_service import WebSocketCommService
 
 GAME_ID = "game_id"
 TABLE_NAME = "table_name"
@@ -31,7 +31,7 @@ def repository(mocker):
 
 @pytest.fixture(autouse=True)
 def dynamodb_repository_class(mocker, repository):
-    mocker.patch('lambdas.create_game.DynamoDBRepository', return_value=repository)
+    mocker.patch('aws.lambdas.admin.create_game.DynamoDBRepository', return_value=repository)
 
 
 @pytest.fixture
@@ -41,7 +41,7 @@ def comm_service(mocker):
 
 @pytest.fixture(autouse=True)
 def websocket_comm_service_class(mocker, comm_service):
-    mocker.patch('lambdas.on_action.WebSocketCommService', return_value=comm_service)
+    mocker.patch('aws.lambdas.on_action.WebSocketCommService', return_value=comm_service)
 
 
 @pytest.fixture
@@ -51,7 +51,7 @@ def state_machine(mocker):
 
 @pytest.fixture(autouse=True)
 def state_machine_class(mocker, state_machine):
-    mocker.patch('lambdas.on_action.StateMachine', return_value=state_machine)
+    mocker.patch('aws.lambdas.on_action.StateMachine', return_value=state_machine)
 
 
 @pytest.fixture

@@ -4,7 +4,7 @@ import pytest
 
 from game_core.constants.event_type import EventType
 from game_core.entities.event import Event
-from lambdas.websocket_comm_service import WebSocketCommService
+from aws.websocket_comm_service import WebSocketCommService
 
 ENDPOINT_URL = "https://mock_api_gateway_endpoint.com"
 TIMESTAMP = "2021-01-01T00:00:00Z"
@@ -17,7 +17,7 @@ def api_gateway(mocker):
 
 @pytest.fixture
 def boto3(mocker, api_gateway):
-    mocked_boto3 = mocker.patch("lambdas.websocket_comm_service.boto3")
+    mocked_boto3 = mocker.patch("aws.websocket_comm_service.boto3")
     mocked_boto3.client.return_value = api_gateway
     return mocked_boto3
 
@@ -29,7 +29,7 @@ def thread_pool_executor(mocker):
 
 @pytest.fixture
 def thread_pool_executor_class(mocker, thread_pool_executor):
-    mocked_thread_pool_executor_class = mocker.patch("lambdas.websocket_comm_service.ThreadPoolExecutor")
+    mocked_thread_pool_executor_class = mocker.patch("aws.websocket_comm_service.ThreadPoolExecutor")
     mocked_thread_pool_executor_class.return_value = thread_pool_executor
     return mocked_thread_pool_executor_class
 

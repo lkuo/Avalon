@@ -3,8 +3,8 @@ import json
 import pytest
 
 from game_core.constants.role import Role
-from lambdas.create_game import lambda_handler
-from lambdas.dynamodb_repository import DynamoDBRepository
+from aws.lambdas.admin.create_game import lambda_handler
+from aws.dynamodb_repository import DynamoDBRepository
 
 GAME_ID = "game_id"
 TABLE_NAME = "table_name"
@@ -30,7 +30,7 @@ def repository(mocker):
 
 @pytest.fixture(autouse=True)
 def dynamodb_repository_class(mocker, repository):
-    mocker.patch('lambdas.create_game.DynamoDBRepository', return_value=repository)
+    mocker.patch('aws.lambdas.admin.create_game.DynamoDBRepository', return_value=repository)
 
 
 @pytest.fixture

@@ -2,7 +2,7 @@ import json
 import logging
 import os
 
-from lambdas.dynamodb_repository import DynamoDBRepository
+from aws.dynamodb_repository import DynamoDBRepository
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()

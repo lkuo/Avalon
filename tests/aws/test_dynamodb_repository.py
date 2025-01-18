@@ -13,7 +13,7 @@ from game_core.constants.game_status import GameStatus
 from game_core.constants.role import Role
 from game_core.constants.state_name import StateName
 from game_core.constants.vote_result import VoteResult
-from lambdas.dynamodb_repository import DynamoDBRepository
+from aws.dynamodb_repository import DynamoDBRepository
 
 DYNAMODB_HOST_PORT = "8000"
 TABLE_NAME = "avalon_test"
@@ -81,7 +81,7 @@ def dynamodb_repository():
 def test_put_game(mocker, dynamodb_repository, dynamodb_table):
     # Given
     game_id = uuid.uuid4().hex
-    mock_uuid = mocker.patch("lambdas.dynamodb_repository.uuid")
+    mock_uuid = mocker.patch("aws.dynamodb_repository.uuid")
     mock_uuid.uuid4.return_value.hex = game_id
     quest_team_size = {
         1: 3,
@@ -249,7 +249,7 @@ def test_update_game(dynamodb_repository, dynamodb_table):
 def test_put_event(mocker, dynamodb_repository, dynamodb_table):
     # Given
     event_id = "eventId"
-    mock_uuid = mocker.patch("lambdas.dynamodb_repository.uuid")
+    mock_uuid = mocker.patch("aws.dynamodb_repository.uuid")
     mock_uuid.uuid4.return_value.hex = event_id
     game_id = uuid.uuid4().hex
     event_type = EventType.GameStarted

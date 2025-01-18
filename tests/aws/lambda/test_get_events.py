@@ -2,8 +2,8 @@ import json
 
 import pytest
 
-from lambdas.dynamodb_repository import DynamoDBRepository
-from lambdas.get_events import lambda_handler
+from aws.dynamodb_repository import DynamoDBRepository
+from aws.lambdas.get_events import lambda_handler
 
 GAME_ID = "game_id"
 PLAYER_ID = "player_id"
@@ -24,7 +24,7 @@ def repository(mocker):
 
 @pytest.fixture(autouse=True)
 def dynamodb_repository_class(mocker, repository):
-    mocker.patch('lambdas.get_events.DynamoDBRepository', return_value=repository)
+    mocker.patch('aws.lambdas.get_events.DynamoDBRepository', return_value=repository)
 
 
 @pytest.fixture
