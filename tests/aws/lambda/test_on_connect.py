@@ -44,6 +44,6 @@ def test_lambda_handler(event, repository):
     res = lambda_handler(event, None)
 
     # Then
-    assert res['body'] == {}
+    assert res['body'] == "Connected"
     assert res['statusCode'] == 200
     repository.put_connection_id.assert_called_once_with(GAME_ID, PLAYER_ID, CONNECTION_ID)

@@ -62,19 +62,19 @@ def test_handle_start_game(
     game.config = game_config
     repository.get_game.return_value = game
     merlin_player = Player(
-        "player1", "game_id", "merlin_player", "secret1", Role.Merlin
+        "game_id_player_player1", "game_id", "merlin_player", "secret1", Role.Merlin
     )
     mordred_player = Player(
-        "player2", "game_id", "mordred_player", "secret2", Role.Mordred
+        "game_id_player_player2", "game_id", "mordred_player", "secret2", Role.Mordred
     )
     percival_player = Player(
-        "player3", "game_id", "percival_player", "secret3", Role.Percival
+        "game_id_player_player3", "game_id", "percival_player", "secret3", Role.Percival
     )
     villager_player1 = Player(
-        "player4", "game_id", "villager_player1", "secret4", Role.Villager
+        "game_id_player_player4", "game_id", "villager_player1", "secret4", Role.Villager
     )
     villager_player2 = Player(
-        "player5", "game_id", "villager_player2", "secret5", Role.Villager
+        "game_id_player_player5", "game_id", "villager_player2", "secret5", Role.Villager
     )
     merlin_player.known_player_ids = [mordred_player.id]
     mordred_player.known_player_ids = [merlin_player.id]
@@ -88,7 +88,7 @@ def test_handle_start_game(
     ]
     player_service.assign_roles.return_value = players
     repository.get_players.return_value = players
-    player_ids = [p.id for p in players]
+    player_ids = [p.id.split("_")[-1] for p in players]
     random.shuffle(player_ids)
     start_game_action.payload = {"player_ids": player_ids}
 

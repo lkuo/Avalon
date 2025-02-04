@@ -146,18 +146,19 @@ class RoundService:
         rounds = sorted(rounds, key=lambda r: (r.quest_number, r.round_number))
         return rounds[-1] if rounds else None
 
-    def _rotate_leader(self, game_id) -> str:
+    def _rotate_leader(self, game_id: str) -> str:
         """
         Rotates the leader to the next player
         :param game_id:
         :return: the next leader id
         """
         game = self._repository.get_game(game_id)
+        rounds = self._repository.get_rounds(game_id)
+        rounds.sort(key=lambda r: (r.quest_number, r.round_number))
         player_ids = game.player_ids
-        idx = player_ids.index(game.leader_id)
+        leader_id = rounds[-1].leader_id if rounds else player_ids[0]
+        idx = player_ids.index(leader_id)
         next_leader_id = player_ids[(idx + 1) % len(player_ids)]
-        game.leader_id = next_leader_id
-        self._repository.update_game(game)
         return next_leader_id
 
 

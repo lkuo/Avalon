@@ -69,11 +69,13 @@ def submit_team_proposal_action():
 
 def test_round_service_create_round(mocker, round_service, repository, event_service):
     # Given
+    player_ids = ["player_id1", "player_id2", LEADER_ID]
     rounds = []
     for i in [3, 2, 1]:
         rnd = mocker.MagicMock(spec=Round)
         rnd.quest_number = QUEST_NUMBER
         rnd.round_number = i
+        rnd.leader_id = player_ids[i - 1]
         rounds.append(rnd)
     repository.get_rounds.return_value = rounds
     game = mocker.MagicMock()
@@ -81,9 +83,7 @@ def test_round_service_create_round(mocker, round_service, repository, event_ser
     number_of_players = 4
     game_config.quest_team_size = {QUEST_NUMBER: number_of_players}
     game.config = game_config
-    player_ids = ["player_id1", "player_id2", LEADER_ID]
     game.player_ids = player_ids
-    game.leader_id = LEADER_ID
     repository.get_game.return_value = game
     current_round = mocker.MagicMock()
     repository.put_round.return_value = current_round
@@ -95,9 +95,6 @@ def test_round_service_create_round(mocker, round_service, repository, event_ser
     repository.put_round.assert_called_once_with(
         GAME_ID, QUEST_NUMBER, ROUND_NUMBER, player_ids[0]
     )
-    updated_game = game
-    updated_game.leader_id = player_ids[0]
-    repository.update_game.assert_called_once_with(updated_game)
     event_service.create_round_started_event.assert_called_once_with(
         GAME_ID, QUEST_NUMBER, ROUND_NUMBER, player_ids[0]
     )

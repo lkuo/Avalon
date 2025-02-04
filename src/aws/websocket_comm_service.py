@@ -19,7 +19,7 @@ class WebSocketCommService(CommService):
 
     def broadcast(self, event: Event) -> None:
         connection_ids = self._repository.get_connection_ids(event.game_id)
-        executor = ThreadPoolExecutor(max_workers=len(connection_ids))
+        executor = ThreadPoolExecutor(max_workers=10)
         for connection_id in connection_ids:
             executor.submit(self._emit, connection_id, event)
         executor.shutdown(wait=True)
@@ -37,4 +37,4 @@ class WebSocketCommService(CommService):
             )
         except Exception as e:
             log.error(f"Failed to send event to connection {connection_id}", exc_info=e)
-            raise e
+            # raise e

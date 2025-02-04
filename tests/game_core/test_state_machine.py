@@ -31,7 +31,7 @@ def repository(mocker):
 @pytest.fixture
 def state_machine(mocker, comm_service, repository):
     game = mocker.MagicMock(spec=Game)
-    game.state = StateName.GameSetup.value
+    game.state = StateName.GameSetup
     repository.get_game.return_value = game
     return StateMachine(comm_service, repository, GAME_ID)
 
@@ -44,11 +44,11 @@ def action():
 @pytest.mark.parametrize(
     "state_name, expected_state",
     [
-        (StateName.GameSetup.value, GameSetupState),
-        (StateName.TeamSelection.value, TeamSelectionState),
-        (StateName.QuestVoting.value, QuestVotingState),
-        (StateName.RoundVoting.value, RoundVotingState),
-        (StateName.EndGame.value, EndGameState),
+        (StateName.GameSetup, GameSetupState),
+        (StateName.TeamSelection, TeamSelectionState),
+        (StateName.QuestVoting, QuestVotingState),
+        (StateName.RoundVoting, RoundVotingState),
+        (StateName.EndGame, EndGameState),
     ],
 )
 def test_setup_states(mocker, comm_service, repository, state_name, expected_state):
@@ -90,8 +90,8 @@ def test_handle_action(mocker, action, state_machine):
 
     # Then
     mock_current_state.handle.assert_called_once_with(action)
-    mock_current_state.on_exit.assert_called_once_with()
-    mock_next_state.on_enter.assert_called_once_with()
+    mock_current_state.on_exit.assert_called_once_with(GAME_ID)
+    mock_next_state.on_enter.assert_called_once_with(GAME_ID)
     state_machine._current_state = mock_next_state
 
 
@@ -109,6 +109,6 @@ def test_handle_action_with_transient_state(mocker, action, state_machine):
 
     # Then
     mock_current_state.handle.assert_called_once_with(action)
-    mock_current_state.on_exit.assert_called_once_with()
-    mock_next_state.on_enter.assert_called_once_with()
+    mock_current_state.on_exit.assert_called_once_with(GAME_ID)
+    mock_next_state.on_enter.assert_called_once_with(GAME_ID)
     state_machine._current_state = mock_third_state

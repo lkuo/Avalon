@@ -9,7 +9,7 @@ logger = logging.getLogger()
 
 
 def lambda_handler(event, context):
-    logger.info("Received event", event)
+    logger.info(f"Received event {event}")
 
     try:
         table_name = os.environ['DYNAMODB_TABLE']
@@ -27,9 +27,10 @@ def lambda_handler(event, context):
 
         repository = DynamoDBRepository(table_name, region)
         repository.put_connection_id(game_id, player_id, connection_id)
+        logger.info(f"Connection id {connection_id} stored for game {game_id} and player {player_id}")
         return {
             "statusCode": 200,
-            "body": {},
+            "body": "Connected",
         }
     except Exception as e:
         logger.error(e)

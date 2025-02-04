@@ -9,12 +9,12 @@ from game_core.state_machine import StateMachine
 from aws.dynamodb_repository import DynamoDBRepository
 from aws.websocket_comm_service import WebSocketCommService
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 
 def lambda_handler(event, context):
-    logger.info("Received event", event)
+    logger.info(f"Received event {event}")
     try:
         table_name = os.environ['DYNAMODB_TABLE']
         region = os.environ['AWS_REGION']
@@ -36,6 +36,7 @@ def lambda_handler(event, context):
                 "statusCode": 400,
                 "body": json.dumps({"error": "Missing name in request body"}),
             }
+
         repository = DynamoDBRepository(table_name, region)
         comm_service = WebSocketCommService(websocket_endpoint, repository)
         game_state_machine = StateMachine(comm_service, repository, game_id)
@@ -47,6 +48,7 @@ def lambda_handler(event, context):
             type=ActionType.JoinGame,
             payload={"name": player_name},
         )
+
         game_state_machine.handle_action(join_game_action)
         return {
             "statusCode": 200,
@@ -57,7 +59,7 @@ def lambda_handler(event, context):
             }),
         }
     except Exception as e:
-        logger.error(e)
+        logger.error(str(e), exc_info=True)
         return {
             "statusCode": 500,
             "body": json.dumps({"error": str(e)}),

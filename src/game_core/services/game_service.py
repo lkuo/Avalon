@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from game_core.constants.game_status import GameStatus
 from game_core.constants.role import Role
@@ -31,13 +31,16 @@ class GameService:
         players = self._player_service.assign_roles(game_id, game.config.roles)
         StartGamePayload(**action.payload)
         player_ids = action.payload["player_ids"]
-        given_player_ids = set(player_ids)
+        given_player_ids = set([f"{game_id}_player_{player_id}" for player_id in player_ids])
         actual_player_ids = set([player.id for player in players])
         if given_player_ids != actual_player_ids:
             raise ValueError(
-                f"player_ids in GameStarted event payload does not match DB, got {given_player_ids}"
+                f"player_ids in GameStarted event payload does not match DB, got {given_player_ids}, actual {actual_player_ids}"
             )
         game.status = GameStatus.InProgress
+        game.player_ids = player_ids
+        if "assassination_attempts" in action.payload:
+            game.assassination_attempts = action.payload["assassination_attempts"]
         self._repository.update_game(game)
         self._event_service.create_game_started_events(game_id, players)
 
@@ -108,6 +111,7 @@ class GameService:
 
 class StartGamePayload(BaseModel):
     player_ids: list[str]
+    assassination_attempts: int | None = Field(default=None)
 
 
 class SubmitAssassinationTargetPayload(BaseModel):

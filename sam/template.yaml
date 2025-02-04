@@ -11,8 +11,6 @@ Globals:
       Variables:
         DYNAMODB_TABLE: !Ref DdbTableName
         WEBSOCKET_ENDPOINT: !Sub "https://${AvalonWebSocket}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
-    Layers:
-      - Ref: CommonLayer
   Api:
     TracingEnabled: true
 
@@ -93,21 +91,6 @@ Resources:
       BillingMode: PAY_PER_REQUEST
 
   ### Layers ###
-  CommonLayer:
-    Type: AWS::Serverless::LayerVersion
-    Properties:
-      LayerName: CommonLayer
-      Description: Common packages
-      ContentUri: ../layers/common/
-      CompatibleRuntimes:
-        - nodejs20.x
-      RetentionPolicy: Delete
-
-  ### Event Bus ###
-  EventBus:
-    Type: AWS::Events::EventBus
-    Properties:
-      Name: AvalonEventBus
 
   ### Api ###
   AdminApi:
@@ -123,7 +106,7 @@ Resources:
         Authorizers:
           CognitoAuthorizer:
             UserPoolArn: !GetAtt AvalonCognitoUserPool.Arn
-  AvalonApi:
+  PublicApi:
     Type: AWS::Serverless::Api
     Properties:
       Name: AvalonApi
@@ -133,16 +116,6 @@ Resources:
         Type: REGIONAL
 
   ### WebSocket ###
-  WebSocketLambdaAuthorizer:
-    Type: AWS::ApiGatewayV2::Authorizer
-    Properties:
-      Name: LambdaAuthorizer
-      AuthorizerUri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AuthorizerFunction.Arn}/invocations"
-      AuthorizerType: REQUEST
-      ApiId: !Ref AvalonWebSocket
-      IdentitySource:
-        - route.request.header.IdentityHeader
-
   AvalonWebSocket:
     Type: AWS::ApiGatewayV2::Api
     Properties:
@@ -155,8 +128,6 @@ Resources:
     Properties:
       ApiId: !Ref AvalonWebSocket
       RouteKey: $connect
-      AuthorizationType: CUSTOM
-      AuthorizerId: !Ref WebSocketLambdaAuthorizer
       OperationName: ConnectRoute
       Target: !Join
         - /
@@ -168,6 +139,7 @@ Resources:
       ApiId: !Ref AvalonWebSocket
       IntegrationType: AWS_PROXY
       IntegrationUri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${OnConnectFunction.Arn}/invocations"
+      IntegrationMethod: POST
   ConnectRouteResponse:
     Type: AWS::ApiGatewayV2::RouteResponse
     Properties:
@@ -193,19 +165,30 @@ Resources:
       IntegrationType: AWS_PROXY
       IntegrationUri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${OnDisconnectFunction.Arn}/invocations"
 
-  Deployment:
-    Type: AWS::ApiGatewayV2::Deployment
-    DependsOn:
-      - ConnectRoute
-      - DisconnectRoute
+  DefaultRoute:
+    Type: AWS::ApiGatewayV2::Route
     Properties:
       ApiId: !Ref AvalonWebSocket
+      RouteKey: $default
+      AuthorizationType: NONE
+      OperationName: DefaultRoute
+      Target: !Join
+        - /
+        - - integrations
+          - !Ref DefaultIntegration
+  DefaultIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref AvalonWebSocket
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${OnActionFunction.Arn}/invocations"
+
   WebSocketStage:
     Type: AWS::ApiGatewayV2::Stage
     Properties:
       StageName: !Ref StageName
-      DeploymentId: !Ref Deployment
       ApiId: !Ref AvalonWebSocket
+      AutoDeploy: true
       AccessLogSettings:
         DestinationArn: !GetAtt WebSocketLogGroup.Arn
         Format: "$context.identity.sourceIp - - [$context.requestTime] \"$context.eventType $context.routeKey $context.connectionId\" $context.status $context.requestId $context.error.message"
@@ -220,16 +203,15 @@ Resources:
   CreateGameFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: src/lambdas/create_game/
-      Handler: create_game.lambda_handler
+      CodeUri: ../src/
+      Handler: aws.lambdas.admin.create_game.lambda_handler
       Runtime: python3.12
       LoggingConfig:
         LogGroup: !Ref CreateGameFunctionLogGroup
       Policies:
-        - DynamoDBReadPolicy:
+        - DynamoDBCrudPolicy:
             TableName: !Ref DynamodbTable
-        - DynamoDBWritePolicy:
-            TableName: !Ref DynamodbTable
+        - AWSLambdaBasicExecutionRole
       Events:
         CreateGame:
           Type: Api
@@ -237,6 +219,7 @@ Resources:
             RestApiId: !Ref AdminApi
             Path: /admin/game
             Method: post
+
   CreateGameFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -246,28 +229,28 @@ Resources:
   StartGameFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ../lambdas/startGame/
-      Handler: index.startGameHandler
-      Runtime: nodejs20.x
+      CodeUri: ../src/
+      Handler: aws.lambdas.admin.start_game.lambda_handler
+      Runtime: python3.12
+      Timeout: 10
       LoggingConfig:
         LogGroup: !Ref StartGameFunctionLogGroup
       Policies:
-        - DynamoDBReadPolicy:
+        - DynamoDBCrudPolicy:
             TableName: !Ref DynamodbTable
-        - DynamoDBWritePolicy:
-            TableName: !Ref DynamodbTable
+        - AWSLambdaBasicExecutionRole
         - Statement:
             - Effect: Allow
               Action:
-                - events:PutEvents
+                - 'execute-api:ManageConnections'
               Resource:
-                - !GetAtt EventBus.Arn
+                - !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AvalonWebSocket}/${StageName}/POST/@connections/*'
       Events:
         StartGame:
           Type: Api
           Properties:
             RestApiId: !Ref AdminApi
-            Path: /admin/game/{gameId}
+            Path: /admin/game/{game_id}
             Method: patch
   StartGameFunctionLogGroup:
     Type: AWS::Logs::LogGroup
@@ -278,39 +261,28 @@ Resources:
   JoinGameFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ../lambdas/joinGame/
-      Handler: index.joinGameHandler
-      Runtime: nodejs20.x
+      CodeUri: ../src/
+      Handler: aws.lambdas.join_game.lambda_handler
+      Runtime: python3.12
+      Timeout: 10
       LoggingConfig:
         LogGroup: !Ref JoinGameFunctionLogGroup
       Policies:
-        - DynamoDBReadPolicy:
+        - DynamoDBCrudPolicy:
             TableName: !Ref DynamodbTable
-        - DynamoDBWritePolicy:
-            TableName: !Ref DynamodbTable
+        - AWSLambdaBasicExecutionRole
         - Statement:
-            - Effect: Allow
-              Action:
-                - "secretsmanager:GetSecretValue"
-              Resource:
-                - "arn:aws:secretsmanager:us-east-2:137230235550:secret:avalonDevJwtSecret-Y83b0j"
+          - Effect: Allow
+            Action:
+              - 'execute-api:ManageConnections'
+            Resource:
+              - !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AvalonWebSocket}/${StageName}/POST/@connections/*'
       Events:
         JoinGame:
           Type: Api
           Properties:
-            RestApiId: !Ref AvalonApi
-            Auth:
-              Authorizer: NONE
-              UsagePlan:
-                CreateUsagePlan: PER_API
-                Description: Usage plan for public join game API
-                Quota:
-                  Limit: 500
-                  Period: MONTH
-                Throttle:
-                  BurstLimit: 50
-                  RateLimit: 20
-            Path: /game/{gameId}/player
+            RestApiId: !Ref PublicApi
+            Path: /game/{game_id}/player
             Method: post
   JoinGameFunctionLogGroup:
     Type: AWS::Logs::LogGroup
@@ -321,30 +293,16 @@ Resources:
   OnConnectFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ../lambdas/onConnect/
-      Handler: index.onConnectHandler
-      Runtime: nodejs20.x
+      CodeUri: ../src/
+      Handler: aws.lambdas.on_connect.lambda_handler
+      Runtime: python3.12
       LoggingConfig:
         LogGroup: !Ref OnConnectFunctionLogGroup
       Policies:
-        - DynamoDBReadPolicy:
+        - DynamoDBCrudPolicy:
             TableName: !Ref DynamodbTable
-        - DynamoDBWritePolicy:
-            TableName: !Ref DynamodbTable
-        - Statement:
-            - Effect: Allow
-              Action:
-                - events:PutEvents
-              Resource:
-                - !GetAtt EventBus.Arn
-  OnConnectInvokeFunctionPermission:
-    Type: AWS::Lambda::Permission
-    DependsOn:
-      - AvalonWebSocket
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !GetAtt OnConnectFunction.Arn
-      Principal: apigateway.amazonaws.com
+        - AWSLambdaBasicExecutionRole
+
   OnConnectFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -354,422 +312,71 @@ Resources:
   OnDisconnectFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ../lambdas/onDisconnect/
-      Handler: index.onDisconnectHandler
-      Runtime: nodejs20.x
+      CodeUri: ../src/
+      Handler: aws.lambdas.on_disconnect.lambda_handler
+      Runtime: python3.12
       LoggingConfig:
         LogGroup: !Ref OnDisconnectFunctionLogGroup
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref DynamodbTable
-  OnDisconnectPermission:
-    Type: AWS::Lambda::Permission
-    DependsOn:
-      - AvalonWebSocket
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !GetAtt OnDisconnectFunction.Arn
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AvalonApi}/*/*/"
   OnDisconnectFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub "/aws/apigateway/api/avalon-${StageName}-OnDisconnectFunction"
       RetentionInDays: 7
 
-  OnPlayerConnectedFunction:
+  OnActionFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ../lambdas/onPlayerConnected/
-      Handler: index.onPlayerConnectedHandler
-      Runtime: nodejs20.x
+      CodeUri: ../src/
+      Handler: aws.lambdas.on_action.lambda_handler
+      Runtime: python3.12
       LoggingConfig:
-        LogGroup: !Ref OnPlayerConnectedFunctionLogGroup
+        LogGroup: !Ref OnActionFunctionLogGroup
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref DynamodbTable
-        - Statement:
-            - Effect: Allow
-              Action:
-                - "execute-api:ManageConnections"
-                - "execute-api:Invoke"
-              Resource:
-                - !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AvalonWebSocket}/${StageName}/*"
-      Events:
-        Trigger:
-          Type: CloudWatchEvent
-          Properties:
-            EventBusName: !Ref EventBus
-            Pattern:
-              source:
-                - custom.avalonApp
-              detail-type:
-                - PLAYER_CONNECTED
-  OnPlayerConnectedFunctionPermission:
+  OnActionFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/apigateway/api/avalon-${StageName}-OnActionFunction"
+      RetentionInDays: 7
+
+  ConnectFunctionPermission:
     Type: AWS::Lambda::Permission
-    DependsOn:
-      - AvalonWebSocket
     Properties:
       Action: lambda:InvokeFunction
-      FunctionName: !GetAtt OnPlayerConnectedFunction.Arn
-      Principal: events.amazonaws.com
-  OnPlayerConnectedFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub "/aws/apigateway/api/avalon-${StageName}-OnPlayerConnectedFunction"
-      RetentionInDays: 7
+      FunctionName: !Ref OnConnectFunction  # Or !GetAtt ConnectFunction.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AvalonWebSocket}/*/*"
 
-  OnGameStartedFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ../lambdas/onGameStarted/
-      Handler: index.onGameStartedHandler
-      Runtime: nodejs20.x
-      LoggingConfig:
-        LogGroup: !Ref OnGameStartedFunctionLogGroup
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref DynamodbTable
-        - Statement:
-            - Effect: Allow
-              Action:
-                - "execute-api:ManageConnections"
-                - "execute-api:Invoke"
-              Resource:
-                - !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AvalonWebSocket}/${StageName}/*"
-      Events:
-        Trigger:
-          Type: CloudWatchEvent
-          Properties:
-            EventBusName: !Ref EventBus
-            Pattern:
-              source:
-                - custom.avalonApp
-              detail-type:
-                - GAME_STARTED
-  OnGameStartedFunctionPermission:
+  DisconnectFunctionPermission:
     Type: AWS::Lambda::Permission
-    DependsOn:
-      - AvalonWebSocket
     Properties:
       Action: lambda:InvokeFunction
-      FunctionName: !GetAtt OnGameStartedFunction.Arn
-      Principal: events.amazonaws.com
-  OnGameStartedFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub "/aws/apigateway/api/avalon-${StageName}-OnGameStartedFunction"
-      RetentionInDays: 7
+      FunctionName: !Ref OnDisconnectFunction  # Or !GetAtt DisconnectFunction.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AvalonWebSocket}/*/*"
 
-  StartMissionFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ../lambdas/startMission/
-      Handler: index.startMissionHandler
-      Runtime: nodejs20.x
-      LoggingConfig:
-        LogGroup: !Ref StartMissionFunctionLogGroup
-      Policies:
-        - DynamoDBReadPolicy:
-            TableName: !Ref DynamodbTable
-        - DynamoDBWritePolicy:
-            TableName: !Ref DynamodbTable
-        - Statement:
-            - Effect: Allow
-              Action:
-                - events:PutEvents
-              Resource:
-                - !GetAtt EventBus.Arn
-      Events:
-        Trigger:
-          Type: CloudWatchEvent
-          Properties:
-            EventBusName: !Ref EventBus
-            Pattern:
-              source:
-                - custom.avalonApp
-              detail-type:
-                - GAME_STARTED
-  StartMissionFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub "/aws/apigateway/api/avalon-${StageName}-StartMissionFunction"
-      RetentionInDays: 7
-
-  OnMissionStartedFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ../lambdas/onMissionStarted/
-      Handler: index.onMissionStartedHandler
-      Runtime: nodejs20.x
-      LoggingConfig:
-        LogGroup: !Ref OnMissionStartedFunctionLogGroup
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref DynamodbTable
-        - Statement:
-            - Effect: Allow
-              Action:
-                - "execute-api:ManageConnections"
-                - "execute-api:Invoke"
-              Resource:
-                - !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AvalonWebSocket}/${StageName}/*"
-      Events:
-        Trigger:
-          Type: CloudWatchEvent
-          Properties:
-            EventBusName: !Ref EventBus
-            Pattern:
-              source:
-                - custom.avalonApp
-              detail-type:
-                - MISSION_STARTED
-  OnMissionStartedFunctionPermission:
+  DefaultFunctionPermission:
     Type: AWS::Lambda::Permission
-    DependsOn:
-      - AvalonWebSocket
     Properties:
       Action: lambda:InvokeFunction
-      FunctionName: !GetAtt OnMissionStartedFunction.Arn
-      Principal: events.amazonaws.com
-  OnMissionStartedFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub "/aws/apigateway/api/avalon-${StageName}-OnMissionStartedFunction"
-      RetentionInDays: 7
-
-  StartRoundFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ../lambdas/startRound/
-      Handler: index.startRoundHandler
-      Runtime: nodejs20.x
-      LoggingConfig:
-        LogGroup: !Ref StartRoundFunctionLogGroup
-      Policies:
-        - DynamoDBReadPolicy:
-            TableName: !Ref DynamodbTable
-        - DynamoDBWritePolicy:
-            TableName: !Ref DynamodbTable
-        - Statement:
-            - Effect: Allow
-              Action:
-                - events:PutEvents
-              Resource:
-                - !GetAtt EventBus.Arn
-      Events:
-        Trigger:
-          Type: CloudWatchEvent
-          Properties:
-            EventBusName: !Ref EventBus
-            Pattern:
-              source:
-                - custom.avalonApp
-              detail-type:
-                - MISSION_STARTED
-  StartRoundFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub "/aws/apigateway/api/avalon-${StageName}-StartRoundFunction"
-      RetentionInDays: 7
-
-  OnRoundStartedFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ../lambdas/onRoundStarted/
-      Handler: index.onRoundStartedHandler
-      Runtime: nodejs20.x
-      LoggingConfig:
-        LogGroup: !Ref OnRoundStartedFunctionLogGroup
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref DynamodbTable
-        - Statement:
-            - Effect: Allow
-              Action:
-                - "execute-api:ManageConnections"
-                - "execute-api:Invoke"
-              Resource:
-                - !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AvalonWebSocket}/${StageName}/*"
-      Events:
-        Trigger:
-          Type: CloudWatchEvent
-          Properties:
-            EventBusName: !Ref EventBus
-            Pattern:
-              source:
-                - custom.avalonApp
-              detail-type:
-                - ROUND_STARTED
-  OnRoundStartedFunctionPermission:
-    Type: AWS::Lambda::Permission
-    DependsOn:
-      - AvalonWebSocket
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !GetAtt OnRoundStartedFunction.Arn
-      Principal: events.amazonaws.com
-  OnRoundStartedFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub "/aws/apigateway/api/avalon-${StageName}-OnRoundStartedFunction"
-      RetentionInDays: 7
-
-  SubmitNominationFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: src/lambdas/create_game/
-      Handler: create_game.lambda_handler
-      Runtime: python3.9
-      LoggingConfig:
-        LogGroup: !Ref CreateGameFunctionLogGroup
-      Policies:
-        - DynamoDBReadPolicy:
-            TableName: !Ref DynamodbTable
-        - DynamoDBWritePolicy:
-            TableName: !Ref DynamodbTable
-        - Statement:
-            - Effect: Allow
-              Action:
-                - events:PutEvents
-              Resource:
-                - !GetAtt EventBus.Arn
-      Events:
-        SubmitNomination:
-          Type: Api
-          Properties:
-            RestApiId: !Ref AvalonApi
-            Path: /game/{gameId}/mission/{missionNumber}/round/{roundNumber}
-            Method: patch
-  SubmitNominationFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub "/aws/apigateway/api/avalon-${StageName}-SubmitNominationFunction"
-      RetentionInDays: 7
-
-  OnNominationSubmittedFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ../lambdas/onNominationSubmitted/
-      Handler: index.onNominationSubmittedHandler
-      Runtime: nodejs20.x
-      LoggingConfig:
-        LogGroup: !Ref OnNominationSubmittedFunctionLogGroup
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref DynamodbTable
-        - Statement:
-            - Effect: Allow
-              Action:
-                - "execute-api:ManageConnections"
-                - "execute-api:Invoke"
-              Resource:
-                - !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AvalonWebSocket}/${StageName}/*"
-      Events:
-        Trigger:
-          Type: CloudWatchEvent
-          Properties:
-            EventBusName: !Ref EventBus
-            Pattern:
-              source:
-                - custom.avalonApp
-              detail-type:
-                - NOMINATION_SUBMITTED
-  OnNominationSubmittedFunctionPermission:
-    Type: AWS::Lambda::Permission
-    DependsOn:
-      - AvalonWebSocket
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !GetAtt OnNominationSubmittedFunction.Arn
-      Principal: events.amazonaws.com
-  OnNominationSubmittedFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub "/aws/apigateway/api/avalon-${StageName}-OnNominationSubmittedFunction"
-      RetentionInDays: 7
-
-  VoteNominationFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ../lambdas/voteNomination/
-      Handler: index.voteNominationHandler
-      Runtime: nodejs20.x
-      LoggingConfig:
-        LogGroup: !Ref VoteNominationFunctionLogGroup
-      Policies:
-        - DynamoDBReadPolicy:
-            TableName: !Ref DynamodbTable
-        - DynamoDBWritePolicy:
-            TableName: !Ref DynamodbTable
-        - Statement:
-            - Effect: Allow
-              Action:
-                - events:PutEvents
-              Resource:
-                - !GetAtt EventBus.Arn
-      Events:
-        VoteNomination:
-          Type: Api
-          Properties:
-            RestApiId: !Ref AvalonApi
-            Path: /game/{gameId}/mission/{missionNumber}/round/{roundNumber}/vote
-            Method: post
-  VoteNominationFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub "/aws/apigateway/api/avalon-${StageName}-VoteNominationFunction"
-      RetentionInDays: 7
-
-  OnNominationVotedFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ../lambdas/onNominationVoted/
-      Handler: index.onNominationVotedHandler
-      Runtime: nodejs20.x
-      LoggingConfig:
-        LogGroup: !Ref OnNominationVotedFunctionLogGroup
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref DynamodbTable
-        - Statement:
-            - Effect: Allow
-              Action:
-                - "execute-api:ManageConnections"
-                - "execute-api:Invoke"
-              Resource:
-                - !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AvalonWebSocket}/${StageName}/*"
-      Events:
-        Trigger:
-          Type: CloudWatchEvent
-          Properties:
-            EventBusName: !Ref EventBus
-            Pattern:
-              source:
-                - custom.avalonApp
-              detail-type:
-                - NOMINATION_VOTED
-  OnNominationVotedFunctionPermission:
-    Type: AWS::Lambda::Permission
-    DependsOn:
-      - AvalonWebSocket
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !GetAtt OnNominationVotedFunction.Arn
-      Principal: events.amazonaws.com
-  OnNominationVotedFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub "/aws/apigateway/api/avalon-${StageName}-OnNominationVotedFunction"
-      RetentionInDays: 7
+      FunctionName: !Ref OnActionFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AvalonWebSocket}/*/*"
 
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
   # Find out more about other implicit resources you can reference within SAM
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
-  BaseUrl:
-    Description: API Gateway endpoint base URL
-    Value: !Sub "https://${AvalonApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}/"
+  AdminUrl:
+    Description: Admin endpoint base URL
+    Value: !Sub "https://${AdminApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}/"
+  PublicUrl:
+    Description: Admin endpoint base URL
+    Value: !Sub "https://${PublicApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}/"
   WebSocketURI:
     Description: WebSocket URI
     Value: !Sub "wss://${AvalonWebSocket}.execute-api.${AWS::Region}.amazonaws.com/${StageName}/"

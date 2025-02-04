@@ -49,11 +49,11 @@ class StateMachine:
         quest_voting_state.set_states(team_selection_state, end_game_state)
 
         self.state_name_map = {
-            StateName.GameSetup.value: game_setup_state,
-            StateName.TeamSelection.value: team_selection_state,
-            StateName.RoundVoting.value: round_voting_state,
-            StateName.QuestVoting.value: quest_voting_state,
-            StateName.EndGame.value: end_game_state,
+            StateName.GameSetup: game_setup_state,
+            StateName.TeamSelection: team_selection_state,
+            StateName.RoundVoting: round_voting_state,
+            StateName.QuestVoting: quest_voting_state,
+            StateName.EndGame: end_game_state,
         }
         self._current_state = self.state_name_map.get(game.state)
 
@@ -65,8 +65,8 @@ class StateMachine:
             raise ValueError("Action payload is None")
         next_state = self._current_state.handle(action)
         if next_state != self._current_state:
-            self._current_state.on_exit()
-            self._current_state = next_state.on_enter() or next_state
+            self._current_state.on_exit(self._game_id)
+            self._current_state = next_state.on_enter(self._game_id) or next_state
 
         game = self._repository.get_game(self._game_id)
         game.state = self._current_state.name
