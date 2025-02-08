@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 
+from game_core.constants.config import DEFAULT_TEAM_SIZE_ROLES, KNOWN_ROLES
 from game_core.constants.game_status import GameStatus
 from game_core.constants.role import Role
 from game_core.entities.action import Action
@@ -29,8 +30,13 @@ class GameService:
                 f"Game {game_id} is not in NotStarted state, got {game.status}"
             )
 
-        players = self._player_service.assign_roles(game_id, game.config.roles, game.config.known_roles)
         StartGamePayload(**action.payload)
+        num_players = len(action.payload["player_ids"])
+        if num_players not in DEFAULT_TEAM_SIZE_ROLES:
+            raise ValueError(f"Only support number of players from 5 to 10, got {num_players}")
+        roles = action.payload.get("roles") or DEFAULT_TEAM_SIZE_ROLES[num_players]
+        known_roles = action.payload.get("known_roles") or KNOWN_ROLES
+        players = self._player_service.assign_roles(game_id, roles, known_roles)
         player_ids = action.payload["player_ids"]
         given_player_ids = set([f"{game_id}_player_{player_id}" for player_id in player_ids])
         actual_player_ids = set([player.id for player in players])
@@ -113,6 +119,8 @@ class GameService:
 class StartGamePayload(BaseModel):
     player_ids: list[str]
     assassination_attempts: int | None = Field(default=None)
+    roles: list[str] | None = Field(default=None)
+    known_roles: dict[str, list[str]] | None = Field(default=None)
 
 
 class SubmitAssassinationTargetPayload(BaseModel):

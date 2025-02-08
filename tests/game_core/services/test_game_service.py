@@ -4,6 +4,7 @@ from typing import Any
 import pytest
 
 from game_core.constants.action_type import ActionType
+from game_core.constants.config import DEFAULT_TEAM_SIZE_ROLES, KNOWN_ROLES
 from game_core.constants.game_status import GameStatus
 from game_core.constants.role import Role
 from game_core.entities.action import Action
@@ -96,7 +97,7 @@ def test_handle_start_game(
     game_service.handle_start_game(start_game_action)
 
     # Then
-    player_service.assign_roles.assert_called_once_with(GAME_ID, game.config.roles, game.config.known_roles)
+    player_service.assign_roles.assert_called_once_with(GAME_ID, DEFAULT_TEAM_SIZE_ROLES[len(players)], KNOWN_ROLES)
     event_service.create_game_started_events.assert_called_once_with(GAME_ID, players)
     game.status = GameStatus.InProgress
     game.player_ids = player_ids
@@ -144,11 +145,11 @@ def test_handle_game_started_with_game_not_exists(
     repository.put_event.assert_not_called()
 
 
-@pytest.mark.parametrize("player_ids", [[], ["invalid_id1", "invalid_id2"]])
 def test_handle_game_started_with_invalid_player_ids(
-    mocker, game_service, player_service, repository, player_ids, start_game_action
+    mocker, game_service, player_service, repository, start_game_action
 ):
     # Given
+    player_ids = ["invalid_id1", "invalid_id2", "invalid_id3", "invalid_id4", "invalid_id5"]
     game_id = "game_id"
     game = mocker.MagicMock()
     game.status = GameStatus.NotStarted
@@ -156,6 +157,7 @@ def test_handle_game_started_with_invalid_player_ids(
     players = [Player("player_id", GAME_ID, "player1", "secret1", Role.Merlin)]
     repository.get_players.return_value = players
     player_service.assign_roles.return_value = players
+    start_game_action.payload = {"player_ids": player_ids}
 
     # When
     with pytest.raises(ValueError):
@@ -163,7 +165,7 @@ def test_handle_game_started_with_invalid_player_ids(
 
     # Then
     repository.get_game.assert_called_once_with(game_id)
-    player_service.assign_roles.assert_called_once_with(game_id, game.config.roles, game.config.known_roles)
+    player_service.assign_roles.assert_called_once_with(game_id, DEFAULT_TEAM_SIZE_ROLES[5], KNOWN_ROLES)
     repository.put_event.assert_not_called()
 
 
