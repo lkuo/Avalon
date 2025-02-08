@@ -28,7 +28,8 @@ class GameService:
             raise ValueError(
                 f"Game {game_id} is not in NotStarted state, got {game.status}"
             )
-        players = self._player_service.assign_roles(game_id, game.config.roles)
+
+        players = self._player_service.assign_roles(game_id, game.config.roles, game.config.known_roles)
         StartGamePayload(**action.payload)
         player_ids = action.payload["player_ids"]
         given_player_ids = set([f"{game_id}_player_{player_id}" for player_id in player_ids])

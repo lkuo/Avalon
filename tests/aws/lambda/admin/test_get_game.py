@@ -4,7 +4,7 @@ import pytest
 
 from aws.dynamodb_repository import DynamoDBRepository
 from aws.lambdas.admin.get_game import lambda_handler
-from game_core.constants.config import KNOWN_ROLES
+from game_core.constants.config import KNOWN_ROLES, DEFAULT_QUEST_TEAM_SIZE, DEFAULT_TEAM_SIZE_ROLES
 
 GAME_ID = "game_id"
 TABLE_NAME = "table_name"
@@ -42,14 +42,9 @@ def test_handle_get_game(mocker, event, repository):
     # Given
     game = mocker.MagicMock()
     game.id = GAME_ID
-    game.config.quest_team_size = {
-        1: 3,
-        2: 4,
-        3: 4,
-        4: 5,
-        5: 5
-    }
-    game.config.roles = KNOWN_ROLES
+    game.config.quest_team_size = DEFAULT_QUEST_TEAM_SIZE
+    game.config.known_roles = KNOWN_ROLES
+    game.config.roles = DEFAULT_TEAM_SIZE_ROLES
     game.config.assassination_attempts = ASSASSINATION_ATTEMPTS
     repository.get_game.return_value = game
     players = []
@@ -64,11 +59,12 @@ def test_handle_get_game(mocker, event, repository):
     res = lambda_handler(event, None)
 
     # Then
-    assert res["statusCode"] == 200
+    assert res["statusCode"] == 200, res["body"]
     body = json.loads(res["body"])
     assert body["id"] == GAME_ID
-    assert body["roles"] == KNOWN_ROLES
-    assert {int(k): int(v) for k, v in body["quest_team_size"].items()} == game.config.quest_team_size
+    assert body["roles"] == {str(k): v for k, v in DEFAULT_TEAM_SIZE_ROLES.items()}
+    assert body["known_roles"] == KNOWN_ROLES
+    assert {int(k): {int(_k): int(_v) for _k, _v in v.items()} for k, v in body["quest_team_size"].items()} == game.config.quest_team_size
     assert body["assassination_attempts"] == ASSASSINATION_ATTEMPTS
     assert body["players"] == [
         {

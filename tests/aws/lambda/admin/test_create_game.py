@@ -4,7 +4,9 @@ import pytest
 
 from aws.dynamodb_repository import DynamoDBRepository
 from aws.lambdas.admin.create_game import lambda_handler
-from game_core.constants.config import DEFAULT_QUEST_TEAM_SIZE, KNOWN_ROLES, DEFAULT_ASSASSINATION_ATTEMPTS
+from game_core.constants.config import DEFAULT_QUEST_TEAM_SIZE, KNOWN_ROLES, DEFAULT_ASSASSINATION_ATTEMPTS, \
+    DEFAULT_TEAM_SIZE_ROLES
+from game_core.entities.game import GameConfig
 
 GAME_ID = "game_id"
 TABLE_NAME = "table_name"
@@ -46,15 +48,11 @@ def test_handle_create_game(mocker, event, repository):
     res = lambda_handler(event, None)
 
     # Then
-    assert res['statusCode'] == 200
+    assert res['statusCode'] == 200, res['body']
     assert res['body'] == json.dumps({
         'game_id': GAME_ID
     })
-    repository.put_game.assert_called_once_with(
-        DEFAULT_QUEST_TEAM_SIZE[TEAM_SIZE],
-        KNOWN_ROLES,
-        DEFAULT_ASSASSINATION_ATTEMPTS
-    )
+    repository.put_game.assert_called_once_with()
 
 
 def test_handle_create_game_error(event, repository):

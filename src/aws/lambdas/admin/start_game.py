@@ -9,8 +9,8 @@ from game_core.constants.action_type import ActionType
 from game_core.entities.action import Action
 from game_core.state_machine import StateMachine
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 
 def lambda_handler(event, context):

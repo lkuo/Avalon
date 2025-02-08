@@ -27,24 +27,14 @@ class DynamoDBRepository(Repository):
         )
         self._table = self._dynamodb.Table(table)
 
-    def put_game(
-        self,
-        quest_team_size: dict[int, int],
-        roles: dict[str, list[str]],
-        assassination_attempts: int
-    ) -> Game:
+    def put_game(self) -> Game:
         game_id = uuid.uuid4().hex
-        config = {
-            "quest_team_size": {str(k): str(v) for k, v in quest_team_size.items()},
-            "roles": roles,
-            "assassination_attempts": assassination_attempts,
-        }
         item = {
             "pk": game_id,
             "sk": "game",
             "status": GameStatus.NotStarted.value,
             "state": StateName.GameSetup.value,
-            "config": config,
+            "config": None,
             "player_ids": [],
         }
         self._table.put_item(Item=item)
@@ -52,11 +42,7 @@ class DynamoDBRepository(Repository):
             game_id,
             GameStatus.NotStarted,
             StateName.GameSetup,
-            GameConfig(
-                quest_team_size,
-                roles,
-                assassination_attempts,
-            ),
+            None,
             [],
             None,
             None,
@@ -67,11 +53,13 @@ class DynamoDBRepository(Repository):
         if "Item" not in response:
             raise ValueError(f"Game {game_id} not found")
         item = response["Item"]
+
         game_config = GameConfig(
             quest_team_size={int(k): int(v) for k, v in item["config"]["quest_team_size"].items()},
             roles=item["config"]["roles"],
+            known_roles=item["config"]["known_roles"],
             assassination_attempts=item["config"]["assassination_attempts"],
-        )
+        ) if item["config"] else None
         return Game(
             id=item["pk"],
             status=GameStatus(item["status"]),
@@ -100,13 +88,9 @@ class DynamoDBRepository(Repository):
             ":status": game.status.value,
             ":state": game.state.value,
             ":config": {
-                "quest_team_size": {
-                    str(k): str(v) for k, v in game.config.quest_team_size.items()
-                },
-                "roles": {
-                    role: [role for role in roles]
-                    for role, roles in game.config.roles.items()
-                },
+                "quest_team_size": {str(k): str(v) for k, v in game.config.quest_team_size.items()},
+                "roles": game.config.roles,
+                "known_roles": game.config.known_roles,
                 "assassination_attempts": game.config.assassination_attempts,
             },
             ":player_ids": game.player_ids,

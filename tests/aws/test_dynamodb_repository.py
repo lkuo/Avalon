@@ -8,12 +8,14 @@ from botocore.client import BaseClient
 from botocore.exceptions import EndpointConnectionError, ClientError
 from tenacity import retry, stop_after_attempt, wait_fixed
 
+from aws.dynamodb_repository import DynamoDBRepository
+from game_core.constants.config import DEFAULT_QUEST_TEAM_SIZE, DEFAULT_TEAM_SIZE_ROLES, KNOWN_ROLES
 from game_core.constants.event_type import EventType
 from game_core.constants.game_status import GameStatus
 from game_core.constants.role import Role
 from game_core.constants.state_name import StateName
 from game_core.constants.vote_result import VoteResult
-from aws.dynamodb_repository import DynamoDBRepository
+from game_core.entities.game import GameConfig
 
 DYNAMODB_HOST_PORT = "8000"
 TABLE_NAME = "avalon_test"
@@ -83,38 +85,13 @@ def test_put_game(mocker, dynamodb_repository, dynamodb_table):
     game_id = uuid.uuid4().hex
     mock_uuid = mocker.patch("aws.dynamodb_repository.uuid")
     mock_uuid.uuid4.return_value.hex = game_id
-    quest_team_size = {
-        1: 3,
-        2: 4,
-        3: 4,
-        5: 5,
-        6: 5,
-    }
-    roles = {
-        Role.Merlin.value: [Role.Morgana.value, Role.Assassin.value, Role.Oberon.value],
-        Role.Percival.value: [Role.Merlin.value, Role.Morgana.value],
-        Role.Villager.value: [],
-        Role.Mordred.value: [
-            Role.Morgana.value,
-            Role.Assassin.value,
-            Role.Oberon.value,
-        ],
-        Role.Morgana.value: [
-            Role.Mordred.value,
-            Role.Assassin.value,
-            Role.Oberon.value,
-        ],
-        Role.Assassin.value: [
-            Role.Mordred.value,
-            Role.Morgana.value,
-            Role.Oberon.value,
-        ],
-        Role.Oberon.value: [],
-    }
     assassination_attempts = 1
+    game_config = GameConfig(
+        DEFAULT_QUEST_TEAM_SIZE, DEFAULT_TEAM_SIZE_ROLES, KNOWN_ROLES, assassination_attempts
+    )
 
     # When
-    game = dynamodb_repository.put_game(quest_team_size, roles, assassination_attempts)
+    game = dynamodb_repository.put_game()
 
     # Then
     item = dynamodb_table.get_item(Key={"pk": game_id, "sk": "game"})["Item"]
@@ -122,22 +99,14 @@ def test_put_game(mocker, dynamodb_repository, dynamodb_table):
     assert item["sk"] == "game"
     assert item["status"] == GameStatus.NotStarted.value
     assert item["state"] == StateName.GameSetup.value
-    assert item["config"]["quest_team_size"] == {
-        str(k): str(v) for k, v in quest_team_size.items()
-    }
-    assert item["config"]["roles"] == {
-        role: [role for role in roles] for role, roles in roles.items()
-    }
-    assert item["config"]["assassination_attempts"] == assassination_attempts
+    assert item["config"] is None
     assert item["player_ids"] == []
     assert "assassination_attempts" not in item
     assert "result" not in item
     assert game.id == game_id
     assert game.status == GameStatus.NotStarted
     assert game.state == StateName.GameSetup
-    assert game.config.quest_team_size == quest_team_size
-    assert game.config.roles == roles
-    assert game.config.assassination_attempts == assassination_attempts
+    assert game.config is None
     assert game.player_ids == []
     assert game.assassination_attempts is None
     assert game.result is None
@@ -149,31 +118,21 @@ def test_get_game(dynamodb_repository, dynamodb_table):
     status = GameStatus.NotStarted
     state = StateName.GameSetup
     config = {
-        "quest_team_size": {1: 3, 2: 4, 3: 4, 4: 5, 5: 6},
-        "roles": {
-            Role.Merlin.value: [Role.Percival.value, Role.Morgana.value],
-            Role.Assassin.value: [Role.Mordred.value],
-            Role.Oberon.value: [Role.Mordred.value],
-            Role.Morgana.value: [Role.Assassin.value],
-            Role.Mordred.value: [Role.Morgana.value],
-            Role.Percival.value: [Role.Merlin.value],
-        },
+        "quest_team_size": DEFAULT_QUEST_TEAM_SIZE[6],
+        "roles": DEFAULT_TEAM_SIZE_ROLES[6],
+        "known_roles": KNOWN_ROLES,
         "assassination_attempts": 1,
     }
-    player_ids = ["player_id1", "player_id2", "player_id3"]
+    player_ids = [f"player_id_{i}" for i in range(6)]
     item = {
         "pk": game_id,
         "sk": "game",
         "status": status.value,
         "state": state.value,
         "config": {
-            "quest_team_size": {
-                str(k): str(v) for k, v in config["quest_team_size"].items()
-            },
-            "roles": {
-                role: [role for role in roles]
-                for role, roles in config["roles"].items()
-            },
+            "quest_team_size": {str(k): str(v) for k, v in config["quest_team_size"].items()},
+            "roles": config["roles"],
+            "known_roles": config["known_roles"],
             "assassination_attempts": config["assassination_attempts"],
         },
         "player_ids": player_ids,
@@ -189,6 +148,7 @@ def test_get_game(dynamodb_repository, dynamodb_table):
     assert game.state == state
     assert game.config.quest_team_size == config["quest_team_size"]
     assert game.config.roles == config["roles"]
+    assert game.config.known_roles == config["known_roles"]
     assert game.config.assassination_attempts == config["assassination_attempts"]
     assert game.player_ids == player_ids
 
@@ -198,15 +158,9 @@ def test_update_game(dynamodb_repository, dynamodb_table):
     status = GameStatus.NotStarted
     state = StateName.GameSetup
     config = {
-        "quest_team_size": {1: 3, 2: 4, 3: 4, 4: 5, 5: 6},
-        "roles": {
-            Role.Merlin.value: [Role.Percival.value, Role.Morgana.value],
-            Role.Assassin.value: [Role.Mordred.value],
-            Role.Oberon.value: [Role.Mordred.value],
-            Role.Morgana.value: [Role.Assassin.value],
-            Role.Mordred.value: [Role.Morgana.value],
-            Role.Percival.value: [Role.Merlin.value],
-        },
+        "quest_team_size": DEFAULT_QUEST_TEAM_SIZE[5],
+        "roles": DEFAULT_TEAM_SIZE_ROLES[5],
+        "known_roles": KNOWN_ROLES,
         "assassination_attempts": 1,
     }
     player_ids = ["player_id1", "player_id2", "player_id3"]
@@ -219,10 +173,8 @@ def test_update_game(dynamodb_repository, dynamodb_table):
             "quest_team_size": {
                 str(k): str(v) for k, v in config["quest_team_size"].items()
             },
-            "roles": {
-                role: [role for role in roles]
-                for role, roles in config["roles"].items()
-            },
+            "roles": config["roles"],
+            "known_roles": config["known_roles"],
             "assassination_attempts": config["assassination_attempts"],
         },
         "player_ids": player_ids,

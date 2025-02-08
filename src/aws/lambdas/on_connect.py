@@ -4,8 +4,8 @@ import os
 
 from aws.dynamodb_repository import DynamoDBRepository
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 
 def lambda_handler(event, context):

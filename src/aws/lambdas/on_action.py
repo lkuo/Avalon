@@ -9,8 +9,8 @@ from game_core.state_machine import StateMachine
 from aws.dynamodb_repository import DynamoDBRepository
 from aws.websocket_comm_service import WebSocketCommService
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 
 def lambda_handler(event, context):

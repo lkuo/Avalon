@@ -4,8 +4,8 @@ import os
 
 from aws.dynamodb_repository import DynamoDBRepository
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 
 def lambda_handler(event, context):
@@ -22,6 +22,7 @@ def lambda_handler(event, context):
             "id": game.id,
             "quest_team_size": game.config.quest_team_size,
             "roles": game.config.roles,
+            "known_roles": game.config.known_roles,
             "assassination_attempts": game.config.assassination_attempts,
             "players": [
                 {

@@ -3,6 +3,7 @@ from unittest.mock import call
 import pytest
 
 from game_core.constants.action_type import ActionType
+from game_core.constants.config import KNOWN_ROLES, DEFAULT_TEAM_SIZE_ROLES
 from game_core.constants.role import Role
 from game_core.entities.action import Action
 from game_core.entities.player import Player
@@ -76,11 +77,8 @@ def test_handle_player_joined_with_invalid_payload(
 def test_assign_roles(mocker, repository, player_service):
     # Given
     game_id = "game_id"
-    roles = {
-        Role.Merlin.value: [Role.Mordred.value],
-        Role.Percival.value: [Role.Merlin.value, Role.Mordred.value],
-        Role.Mordred.value: [Role.Percival.value],
-    }
+    roles = DEFAULT_TEAM_SIZE_ROLES[10]
+    known_roles = KNOWN_ROLES
     players = [
         Player(f"player_id_{i}", "game_id", f"Player {i}", f"secret_{i}")
         for i in range(10)
@@ -91,7 +89,7 @@ def test_assign_roles(mocker, repository, player_service):
     repository.get_players.return_value = players
 
     # When
-    assigned_players = player_service.assign_roles(game_id, roles)
+    assigned_players = player_service.assign_roles(game_id, roles, known_roles)
 
     # Then
 
@@ -102,14 +100,17 @@ def test_assign_roles(mocker, repository, player_service):
     assert len(merlin_players) == 1
     assert len(mordred_players) == 1
     assert len(percival_players) == 1
-    assert len(villagers) == len(players) - 3
+    assert len(villagers) == 4
 
     assert len(assigned_players) == len(players)
     repository.get_players.assert_called_once_with(game_id)
     repository.update_player.assert_has_calls([call(p) for p in players])
-    assert merlin_players[0].known_player_ids == [mordred_players[0].id]
+    morgana_player = [p for p in players if p.role == Role.Morgana][0]
+    assassin_player = [p for p in players if p.role == Role.Assassin][0]
+    oberon_player = [p for p in players if p.role == Role.Oberon][0]
+    assert set(merlin_players[0].known_player_ids) == {morgana_player.id, assassin_player.id, oberon_player.id}
     assert set(percival_players[0].known_player_ids) == {
         merlin_players[0].id,
-        mordred_players[0].id,
+        morgana_player.id,
     }
-    assert mordred_players[0].known_player_ids == [percival_players[0].id]
+    assert set(mordred_players[0].known_player_ids) == {morgana_player.id, assassin_player.id, oberon_player.id}

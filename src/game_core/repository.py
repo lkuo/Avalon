@@ -4,7 +4,7 @@ from typing import Any
 from game_core.constants.event_type import EventType
 from game_core.constants.vote_result import VoteResult
 from game_core.entities.event import Event
-from game_core.entities.game import Game
+from game_core.entities.game import Game, GameConfig
 from game_core.entities.player import Player
 from game_core.entities.quest import Quest
 from game_core.entities.quest_vote import QuestVote
@@ -15,12 +15,7 @@ from game_core.entities.round_vote import RoundVote
 class Repository(ABC):
 
     @abstractmethod
-    def put_game(
-        self,
-        quest_team_size: dict[int, int],
-        roles: dict[str, list[str]],
-        assassination_attempts: int
-    ) -> Game:
+    def put_game(self) -> Game:
         pass
 
     @abstractmethod

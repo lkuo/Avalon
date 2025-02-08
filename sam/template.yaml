@@ -233,6 +233,9 @@ Resources:
       Handler: aws.lambdas.admin.start_game.lambda_handler
       Runtime: python3.12
       Timeout: 10
+      Environment:
+        Variables:
+          LOG_LEVEL: DEBUG
       LoggingConfig:
         LogGroup: !Ref StartGameFunctionLogGroup
       Policies:

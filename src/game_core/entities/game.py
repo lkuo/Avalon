@@ -8,7 +8,8 @@ from game_core.constants.state_name import StateName
 @dataclass
 class GameConfig:
     quest_team_size: dict[int, int]
-    roles: dict[str, list[str]]
+    roles: list[str]
+    known_roles: dict[str, list[str]]
     assassination_attempts: int
 
 
@@ -17,7 +18,7 @@ class Game:
     id: str
     status: GameStatus
     state: StateName
-    config: GameConfig
+    config: Optional[GameConfig]
     player_ids: Optional[list[str]]
     assassination_attempts: Optional[int]
     result: Optional[str]

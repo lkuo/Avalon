@@ -96,7 +96,7 @@ def test_handle_start_game(
     game_service.handle_start_game(start_game_action)
 
     # Then
-    player_service.assign_roles.assert_called_once_with(GAME_ID, game.config.roles)
+    player_service.assign_roles.assert_called_once_with(GAME_ID, game.config.roles, game.config.known_roles)
     event_service.create_game_started_events.assert_called_once_with(GAME_ID, players)
     game.status = GameStatus.InProgress
     game.player_ids = player_ids
@@ -163,7 +163,7 @@ def test_handle_game_started_with_invalid_player_ids(
 
     # Then
     repository.get_game.assert_called_once_with(game_id)
-    player_service.assign_roles.assert_called_once_with(game_id, game.config.roles)
+    player_service.assign_roles.assert_called_once_with(game_id, game.config.roles, game.config.known_roles)
     repository.put_event.assert_not_called()
 
 
