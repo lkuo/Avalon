@@ -1,14 +1,20 @@
+import logging
+
 from pydantic import BaseModel, Field
 
-from game_core.constants.config import DEFAULT_TEAM_SIZE_ROLES, KNOWN_ROLES
+from game_core.constants.config import DEFAULT_TEAM_SIZE_ROLES, KNOWN_ROLES, DEFAULT_QUEST_TEAM_SIZE, \
+    DEFAULT_ASSASSINATION_ATTEMPTS
 from game_core.constants.game_status import GameStatus
 from game_core.constants.role import Role
 from game_core.entities.action import Action
-from game_core.entities.game import Game
+from game_core.entities.game import Game, GameConfig
 from game_core.entities.player import Player
 from game_core.repository import Repository
 from game_core.services.event_service import EventService
 from game_core.services.player_service import PlayerService
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 
 class GameService:
@@ -46,8 +52,13 @@ class GameService:
             )
         game.status = GameStatus.InProgress
         game.player_ids = player_ids
-        if "assassination_attempts" in action.payload:
-            game.assassination_attempts = action.payload["assassination_attempts"]
+        game_config = GameConfig(
+            quest_team_size=DEFAULT_QUEST_TEAM_SIZE[num_players],
+            roles=roles,
+            known_roles=known_roles,
+            assassination_attempts=action.payload.get("assassination_attempts", DEFAULT_ASSASSINATION_ATTEMPTS[num_players])
+        )
+        game.config = game_config
         self._repository.update_game(game)
         self._event_service.create_game_started_events(game_id, players)
 

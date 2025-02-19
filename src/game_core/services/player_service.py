@@ -44,6 +44,7 @@ class PlayerService:
         return self._repository.put_player(player_id, game_id, payload.name, secret)
 
     def assign_roles(self, game_id: str, roles: list[str], known_roles: dict[str, list[str]]) -> list[Player]:
+        logger.debug(f"Roles: {roles}, known_roles: {known_roles}")
         players = self._repository.get_players(game_id)
         logger.debug(f"Num of players {len(players)} with roles: {roles}")
         random.shuffle(players)
@@ -51,15 +52,17 @@ class PlayerService:
             player = players[i]
             player.role = Role(roles[i]) if i < len(roles) else Role.Villager
 
-        role_player_ids = defaultdict(list)
-        for player in players:
-            role_player_ids[player.role.value].append(player.id)
-
-        logger.debug(f"role_player_ids: {role_player_ids}")
+        role_player_id = {player.role.value: player.id for player in players if player.role != Role.Villager}
+        logger.debug(f"role_player_ids: {role_player_id}")
 
         for player in players:
+            player.known_player_ids = []
+            logger.debug(f"player: {player}")
             for known_role in known_roles[player.role.value]:
-                player.known_player_ids.extend(role_player_ids[known_role])
+                logger.debug(f"known_role: {known_role}")
+                if known_role in role_player_id:
+                    logger.debug(f"appending {role_player_id[known_role]}")
+                    player.known_player_ids.append(role_player_id[known_role])
             logger.debug(f"player: {player}, known_player_ids: {player.known_player_ids}")
             self._repository.update_player(player)
         return players

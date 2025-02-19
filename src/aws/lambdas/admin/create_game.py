@@ -3,9 +3,6 @@ import logging
 import os
 
 from aws.dynamodb_repository import DynamoDBRepository
-from game_core.constants.config import DEFAULT_QUEST_TEAM_SIZE, KNOWN_ROLES, DEFAULT_ASSASSINATION_ATTEMPTS, \
-    DEFAULT_TEAM_SIZE_ROLES
-from game_core.entities.game import GameConfig
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)

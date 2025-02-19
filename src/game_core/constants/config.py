@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from game_core.constants.role import Role
 
 DEFAULT_QUEST_TEAM_SIZE = {
@@ -62,4 +64,4 @@ KNOWN_ROLES = {
     Role.Oberon.value: [],
     Role.Villager.value: [],
 }
-DEFAULT_ASSASSINATION_ATTEMPTS = 1
+DEFAULT_ASSASSINATION_ATTEMPTS = defaultdict(lambda: 0, {10: 1})

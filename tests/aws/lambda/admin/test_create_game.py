@@ -4,9 +4,6 @@ import pytest
 
 from aws.dynamodb_repository import DynamoDBRepository
 from aws.lambdas.admin.create_game import lambda_handler
-from game_core.constants.config import DEFAULT_QUEST_TEAM_SIZE, KNOWN_ROLES, DEFAULT_ASSASSINATION_ATTEMPTS, \
-    DEFAULT_TEAM_SIZE_ROLES
-from game_core.entities.game import GameConfig
 
 GAME_ID = "game_id"
 TABLE_NAME = "table_name"

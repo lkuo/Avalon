@@ -84,15 +84,18 @@ class DynamoDBRepository(Repository):
             "#assassination_attempts": "assassination_attempts",
             "#result": "result",
         }
-        expression_attribute_values = {
-            ":status": game.status.value,
-            ":state": game.state.value,
-            ":config": {
+        config = None
+        if game.config:
+            config = {
                 "quest_team_size": {str(k): str(v) for k, v in game.config.quest_team_size.items()},
                 "roles": game.config.roles,
                 "known_roles": game.config.known_roles,
                 "assassination_attempts": game.config.assassination_attempts,
-            },
+            }
+        expression_attribute_values = {
+            ":status": game.status.value,
+            ":state": game.state.value,
+            ":config": config,
             ":player_ids": game.player_ids,
             ":assassination_attempts": game.assassination_attempts,
             ":result": game.result,

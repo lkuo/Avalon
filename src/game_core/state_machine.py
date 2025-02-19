@@ -1,3 +1,5 @@
+import logging
+
 from game_core.constants.state_name import StateName
 from game_core.entities.action import Action
 from game_core.repository import Repository
@@ -12,6 +14,9 @@ from game_core.states.game_setup_state import GameSetupState
 from game_core.states.quest_voting_state import QuestVotingState
 from game_core.states.round_voting_state import RoundVotingState
 from game_core.states.team_selection_state import TeamSelectionState
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 
 class StateMachine:
@@ -69,5 +74,6 @@ class StateMachine:
             self._current_state = next_state.on_enter(self._game_id) or next_state
 
         game = self._repository.get_game(self._game_id)
+        logger.info(f"Game {game}")
         game.state = self._current_state.name
         self._repository.update_game(game)

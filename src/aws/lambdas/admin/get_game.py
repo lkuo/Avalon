@@ -20,10 +20,10 @@ def lambda_handler(event, context):
         players = repository.get_players(game_id)
         res_body = {
             "id": game.id,
-            "quest_team_size": game.config.quest_team_size,
-            "roles": game.config.roles,
-            "known_roles": game.config.known_roles,
-            "assassination_attempts": game.config.assassination_attempts,
+            "quest_team_size": game.config and game.config.quest_team_size,
+            "roles": game.config and game.config.roles,
+            "known_roles": game.config and game.config.known_roles,
+            "assassination_attempts": game.config and game.config.assassination_attempts,
             "players": [
                 {
                     "id": player.id,
