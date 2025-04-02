@@ -10,11 +10,11 @@ from aws.dynamodb_repository import DynamoDBRepository
 from aws.websocket_comm_service import WebSocketCommService
 
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+logger.setLevel(os.getenv("LOG_LEVEL", "INFO"))
 
 
 def lambda_handler(event, context):
-    logger.info("Received event", event)
+    logger.info(f"Received event {event}")
     try:
         table_name = os.environ['DYNAMODB_TABLE']
         region = os.environ['AWS_REGION']
@@ -35,13 +35,14 @@ def lambda_handler(event, context):
             type=ActionType(action_type),
             payload=payload,
         )
+        logger.debug(f"before handling action")
         game_state_machine.handle_action(action)
+        logger.debug(f"after handling action")
         return {
             "statusCode": 200,
         }
     except Exception as e:
-        logger.error(e)
+        logger.error(str(e), exc_info=True)
         return {
             "statusCode": 500,
-            "body": json.dumps({"error": str(e)}),
         }

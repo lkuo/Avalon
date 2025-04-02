@@ -139,7 +139,7 @@ def test_on_enter_quest_voting_state(
     repository.get_quests.return_value = quests
     current_round = mocker.MagicMock()
     current_round.team_member_ids = team_member_ids
-    round_service.get_current_round.return_value = current_round
+    round_service._get_last_round.return_value = current_round
 
     # When
     quest_service.on_enter_quest_voting_state(GAME_ID)

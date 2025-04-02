@@ -10,7 +10,7 @@ from game_core.entities.action import Action
 from game_core.state_machine import StateMachine
 
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+logger.setLevel(os.getenv("LOG_LEVEL", "INFO"))
 
 
 def lambda_handler(event, context):

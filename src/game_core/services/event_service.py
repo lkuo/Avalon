@@ -1,12 +1,12 @@
 from datetime import datetime
 from typing import Any
 
+from game_core.comm_service import CommService
 from game_core.constants.event_type import EventType
 from game_core.constants.vote_result import VoteResult
 from game_core.entities.event import Event
 from game_core.entities.player import Player
 from game_core.repository import Repository
-from game_core.comm_service import CommService
 
 
 class EventService:
@@ -15,7 +15,7 @@ class EventService:
         self._repository = repository
 
     def create_player_joined_event(
-        self, player_id: str, game_id: str, player_name: str
+            self, player_id: str, game_id: str, player_name: str
     ) -> None:
         payload = {"player_id": player_id, "player_name": player_name}
         event = self._create_event(game_id, EventType.PlayerJoined, [], payload)
@@ -54,7 +54,7 @@ class EventService:
         self._comm_service.broadcast(event)
 
     def create_round_started_event(
-        self, game_id: str, quest_number: int, round_number: int, leader_id: str
+            self, game_id: str, quest_number: int, round_number: int, leader_id: str
     ) -> None:
         payload = {
             "quest_number": quest_number,
@@ -65,7 +65,7 @@ class EventService:
         self._comm_service.broadcast(event)
 
     def create_team_selection_requested_event(
-        self, game_id: str, quest_number: int, round_number: int, number_of_players: int
+            self, game_id: str, leader_id: str, quest_number: int, round_number: int, number_of_players: int
     ) -> None:
         payload = {
             "quest_number": quest_number,
@@ -73,16 +73,16 @@ class EventService:
             "number_of_players": number_of_players,
         }
         event = self._create_event(
-            game_id, EventType.TeamSelectionRequested, [], payload
+            game_id, EventType.TeamSelectionRequested, [leader_id], payload
         )
-        self._comm_service.broadcast(event)
+        self._comm_service.notify(leader_id, event)
 
     def create_team_proposal_submitted_event(
-        self,
-        game_id: str,
-        quest_number: int,
-        round_number: int,
-        team_member_ids: list[str],
+            self,
+            game_id: str,
+            quest_number: int,
+            round_number: int,
+            team_member_ids: list[str],
     ) -> None:
         payload = {
             "quest_number": quest_number,
@@ -95,39 +95,39 @@ class EventService:
         self._comm_service.broadcast(event)
 
     def create_round_vote_cast_event(
-        self,
-        game_id: str,
-        quest_number: int,
-        round_number: int,
-        player_id: str,
-        vote_result: VoteResult,
+            self,
+            game_id: str,
+            quest_number: int,
+            round_number: int,
+            player_id: str,
     ) -> None:
         payload = {
             "quest_number": quest_number,
             "round_number": round_number,
             "player_id": player_id,
-            "result": vote_result.value,
         }
         event = self._create_event(game_id, EventType.RoundVoteCast, [], payload)
         self._comm_service.broadcast(event)
 
     def create_round_completed_event(
-        self,
-        game_id: str,
-        quest_number: int,
-        round_number: int,
-        vote_result: VoteResult,
+            self,
+            game_id: str,
+            quest_number: int,
+            round_number: int,
+            player_votes: dict[str, VoteResult],
+            vote_result: VoteResult,
     ) -> None:
         payload = {
             "quest_number": quest_number,
             "round_number": round_number,
+            "player_votes": player_votes,
             "result": vote_result.value,
         }
         event = self._create_event(game_id, EventType.RoundCompleted, [], payload)
         self._comm_service.broadcast(event)
 
     def create_quest_completed_event(
-        self, game_id: str, quest_number: int, result: VoteResult
+            self, game_id: str, quest_number: int, result: VoteResult
     ) -> None:
         payload = {
             "quest_number": quest_number,
@@ -137,7 +137,7 @@ class EventService:
         self._comm_service.broadcast(event)
 
     def create_quest_vote_started_event(
-        self, game_id: str, quest_number: int, team_member_ids: list[str]
+            self, game_id: str, quest_number: int, team_member_ids: list[str]
     ) -> None:
         payload = {
             "quest_number": quest_number,
@@ -147,11 +147,10 @@ class EventService:
         self._comm_service.broadcast(event)
 
     def create_quest_vote_requested_event(
-        self, game_id: str, quest_number: int, team_member_ids: list[str]
+            self, game_id: str, quest_number: int, team_member_ids: list[str]
     ) -> None:
         payload = {
             "quest_number": quest_number,
-            "team_member_ids": team_member_ids,
         }
         event = self._create_event(
             game_id, EventType.QuestVoteRequested, team_member_ids, payload
@@ -160,25 +159,23 @@ class EventService:
             self._comm_service.notify(team_member_id, event)
 
     def create_quest_vote_cast_event(
-        self, game_id: str, quest_number: int, player_id: str, vote_result: VoteResult
-    ) -> None:
+            self, game_id: str, quest_number: int, player_id: str) -> None:
         payload = {
             "quest_number": quest_number,
-            "result": vote_result.value,
             "player_id": player_id,
         }
         event = self._create_event(game_id, EventType.QuestVoteCast, [], payload)
         self._comm_service.broadcast(event)
 
     def create_assassination_started_event(
-        self, game_id: str, assassination_attempts: int
+            self, game_id: str, assassination_attempts: int
     ) -> None:
         payload = {"assassination_attempts": assassination_attempts}
         event = self._create_event(game_id, EventType.AssassinationStarted, [], payload)
         self._comm_service.broadcast(event)
 
     def create_assassination_target_requested_event(
-        self, game_id: str, assassin_id: str
+            self, game_id: str, assassin_id: str
     ) -> None:
         event = self._create_event(
             game_id, EventType.AssassinationTargetRequested, [assassin_id], {}
@@ -186,7 +183,7 @@ class EventService:
         self._comm_service.broadcast(event)
 
     def create_assassination_event(
-        self, game_id: str, target_id: str, is_successful: bool
+            self, game_id: str, target_id: str, is_successful: bool
     ) -> None:
         payload = {
             "target_id": target_id,
@@ -201,7 +198,7 @@ class EventService:
         self._comm_service.broadcast(event)
 
     def create_game_ended_event(
-        self, game_id: str, player_roles: dict[str, Any]
+            self, game_id: str, player_roles: dict[str, Any]
     ) -> None:
         payload = {
             "player_roles": player_roles,
@@ -210,11 +207,11 @@ class EventService:
         self._comm_service.broadcast(event)
 
     def _create_event(
-        self,
-        game_id: str,
-        event_type: EventType,
-        recipients: list[str],
-        payload: dict[str, Any],
+            self,
+            game_id: str,
+            event_type: EventType,
+            recipients: list[str],
+            payload: dict[str, Any],
     ) -> Event:
         return self._repository.put_event(
             game_id, event_type, recipients, payload, datetime.now().isoformat()

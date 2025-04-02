@@ -60,7 +60,7 @@ def test_round_voting_state_when_round_not_voted(
     # Given
     current_round = mocker.MagicMock(spec=Round)
     current_round.result = None
-    round_service.get_current_round.return_value = current_round
+    round_service._get_last_round.return_value = current_round
 
     # When
     next_state = round_voting_state.handle(cast_round_vote_action)
@@ -81,7 +81,7 @@ def test_round_voting_state_when_proposal_passed(
     # Given
     current_round = mocker.MagicMock(spec=Round)
     current_round.result = VoteResult.Fail
-    round_service.get_current_round.return_value = current_round
+    round_service._get_last_round.return_value = current_round
 
     # When
     next_state = round_voting_state.handle(cast_round_vote_action)

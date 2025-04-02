@@ -100,7 +100,7 @@ def test_end_game_state_on_enter_with_assassination_attempts(
     # Then
     game_service.get_assassination_attempts.assert_called_once_with(GAME_ID)
     game_service.on_enter_end_game_state.assert_called_once_with(GAME_ID)
-    game_service.handle_game_ended.assert_not_called()
+    game_service.end_game.assert_not_called()
 
 
 def test_end_game_state_on_enter_without_assassination_attempts(
@@ -114,5 +114,5 @@ def test_end_game_state_on_enter_without_assassination_attempts(
 
     # Then
     game_service.get_assassination_attempts.assert_called_once_with(GAME_ID)
-    game_service.handle_game_ended.assert_called_once_with(GAME_ID)
+    game_service.end_game.assert_called_once_with(GAME_ID)
     game_service.on_enter_end_game_state.assert_not_called()

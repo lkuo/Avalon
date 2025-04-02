@@ -2,12 +2,9 @@ import logging
 import os
 import random
 import uuid
-from collections import defaultdict
-
-from pydantic import BaseModel
 
 from game_core.constants.role import Role
-from game_core.entities.action import Action
+from game_core.entities.game import Game
 from game_core.entities.player import Player
 from game_core.repository import Repository
 from game_core.services.event_service import EventService
@@ -18,35 +15,27 @@ logger.setLevel(os.getenv("LOG_LEVEL", "INFO"))
 
 class PlayerService:
     def __init__(
-        self,
-        event_service: EventService,
-        repository: Repository,
+            self,
+            event_service: EventService,
+            repository: Repository,
     ):
         self._event_service = event_service
         self._repository = repository
 
-    def handle_join_game(self, action: Action) -> None:
-        """
-        Persist the player, and create a PlayerJoined event then broadcast the event
-        :param action: PlayerJoined event
-        :return:
-        """
-        player = self._save_player(action)
-        self._event_service.create_player_joined_event(
-            player.id, action.game_id, player.name
-        )
-
-    def _save_player(self, action: Action) -> Player:
-        payload = JoinGamePayload(**action.payload)
-        player_id = action.player_id
-        game_id = action.game_id
+    def save_player(self, player_id: str, name: str) -> Player:
         secret = str(uuid.uuid4())
-        return self._repository.put_player(player_id, game_id, payload.name, secret)
+        return self._repository.put_player(player_id, name, secret)
 
-    def assign_roles(self, game_id: str, roles: list[str], known_roles: dict[str, list[str]]) -> list[Player]:
-        logger.debug(f"Roles: {roles}, known_roles: {known_roles}")
-        players = self._repository.get_players(game_id)
-        logger.debug(f"Num of players {len(players)} with roles: {roles}")
+    def get_player(self, player_id: str) -> Player:
+        return self._repository.get_player(player_id)
+
+    def get_players(self, game_id: str) -> list[Player]:
+        return self._repository.get_players(game_id)
+
+    def assign_roles(self, players: list[Player], game: Game) -> list[Player]:
+        roles = game.roles
+        known_roles = game.known_roles
+        logger.debug(f"Roles: {roles}, known_roles: {known_roles}, num of players {len(players)}")
         random.shuffle(players)
         for i in range(len(players)):
             player = players[i]
@@ -67,15 +56,3 @@ class PlayerService:
             self._repository.update_player(player)
         return players
 
-    def get_player(self, player_id: str) -> Player:
-        player = self._repository.get_player(player_id)
-        if not player:
-            raise ValueError(f"Player {player_id} not found")
-        return player
-
-    def get_players(self, game_id: str) -> list[Player]:
-        return self._repository.get_players(game_id)
-
-
-class JoinGamePayload(BaseModel):
-    name: str

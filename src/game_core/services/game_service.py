@@ -1,66 +1,34 @@
 import logging
+import os
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
-from game_core.constants.config import DEFAULT_TEAM_SIZE_ROLES, KNOWN_ROLES, DEFAULT_QUEST_TEAM_SIZE, \
-    DEFAULT_ASSASSINATION_ATTEMPTS
+from game_core.constants.config import DEFAULT_TEAM_SIZE_ROLES, KNOWN_ROLES, DEFAULT_ASSASSINATION_ATTEMPTS, \
+    DEFAULT_QUEST_TEAM_SIZE
 from game_core.constants.game_status import GameStatus
 from game_core.constants.role import Role
+from game_core.constants.state_name import StateName
 from game_core.entities.action import Action
-from game_core.entities.game import Game, GameConfig
+from game_core.entities.game import Game
 from game_core.entities.player import Player
 from game_core.repository import Repository
 from game_core.services.event_service import EventService
 from game_core.services.player_service import PlayerService
 
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+logger.setLevel(os.getenv("LOG_LEVEL", "INFO"))
 
 
 class GameService:
     def __init__(
-        self,
-        player_service: PlayerService,
-        event_service: EventService,
-        repository: Repository,
+            self,
+            player_service: PlayerService,
+            event_service: EventService,
+            repository: Repository,
     ):
         self._player_service = player_service
         self._event_service = event_service
         self._repository = repository
-
-    def handle_start_game(self, action: Action) -> None:
-        game_id = action.game_id
-        game = self.get_game(game_id)
-        if game.status != GameStatus.NotStarted:
-            raise ValueError(
-                f"Game {game_id} is not in NotStarted state, got {game.status}"
-            )
-
-        StartGamePayload(**action.payload)
-        num_players = len(action.payload["player_ids"])
-        if num_players not in DEFAULT_TEAM_SIZE_ROLES:
-            raise ValueError(f"Only support number of players from 5 to 10, got {num_players}")
-        roles = action.payload.get("roles") or DEFAULT_TEAM_SIZE_ROLES[num_players]
-        known_roles = action.payload.get("known_roles") or KNOWN_ROLES
-        players = self._player_service.assign_roles(game_id, roles, known_roles)
-        player_ids = action.payload["player_ids"]
-        given_player_ids = set([f"{game_id}_player_{player_id}" for player_id in player_ids])
-        actual_player_ids = set([player.id for player in players])
-        if given_player_ids != actual_player_ids:
-            raise ValueError(
-                f"player_ids in GameStarted event payload does not match DB, got {given_player_ids}, actual {actual_player_ids}"
-            )
-        game.status = GameStatus.InProgress
-        game.player_ids = player_ids
-        game_config = GameConfig(
-            quest_team_size=DEFAULT_QUEST_TEAM_SIZE[num_players],
-            roles=roles,
-            known_roles=known_roles,
-            assassination_attempts=action.payload.get("assassination_attempts", DEFAULT_ASSASSINATION_ATTEMPTS[num_players])
-        )
-        game.config = game_config
-        self._repository.update_game(game)
-        self._event_service.create_game_started_events(game_id, players)
 
     def get_game(self, game_id: str) -> Game:
         game = self._repository.get_game(game_id)
@@ -69,16 +37,43 @@ class GameService:
 
         return game
 
+    def start_game(self, game_id: str, player_ids: list[str], assassination_attempt: int | None) -> Game:
+        num_players = len(player_ids)
+        roles = DEFAULT_TEAM_SIZE_ROLES[num_players]
+        known_roles = KNOWN_ROLES
+        assassination_attempts = DEFAULT_ASSASSINATION_ATTEMPTS[
+            num_players] if assassination_attempt is None else assassination_attempt
+
+        game = self.get_game(game_id)
+        game.player_ids = [player_id for player_id in player_ids]
+        game.roles = roles
+        game.known_roles = known_roles
+        game.assassination_attempts = assassination_attempts
+        game.state = StateName.TeamSelection.value
+        game.quest_team_size = DEFAULT_QUEST_TEAM_SIZE[num_players]
+        return self.update_game(game)
+
+    def _rotate_leader(self, game_id: str) -> str:
+        """
+        Rotates the leader to the next player
+        :param game_id:
+        :return: the next leader id
+        """
+        game = self._repository.get_game(game_id)
+        rounds = self._repository.get_rounds(game_id)
+        rounds.sort(key=lambda r: (r.quest_number, r.round_number))
+        player_ids = game.player_ids
+        leader_id = rounds[-1].leader_id if rounds else player_ids[0]
+        idx = player_ids.index(leader_id)
+        next_leader_id = player_ids[(idx + 1) % len(player_ids)]
+        return next_leader_id
+
+    def update_game(self, game: Game) -> Game:
+        return self._repository.update_game(game)
+
     def get_assassination_attempts(self, game_id: str) -> int:
         game = self.get_game(game_id)
-        game_config = game.config
-        if not game_config:
-            raise ValueError(f"Game {game_id} config not found")
-        return (
-            game.assassination_attempts
-            if game.assassination_attempts is not None
-            else game_config.assassination_attempts
-        )
+        return game.assassination_attempts
 
     def on_enter_end_game_state(self, game_id: str) -> None:
         assassin = self._get_assassin(game_id)
@@ -112,9 +107,9 @@ class GameService:
             action.game_id, target.id, is_successful
         )
         if is_successful:
-            self.handle_game_ended(action.game_id)
+            self.end_game(action.game_id)
 
-    def handle_game_ended(self, game_id: str) -> None:
+    def end_game(self, game_id: str) -> None:
         game = self._repository.get_game(game_id)
         game.status = GameStatus.Finished
         self._repository.update_game(game)
@@ -125,13 +120,6 @@ class GameService:
     def is_game_finished(self, game_id: str) -> bool:
         game = self.get_game(game_id)
         return game.status == GameStatus.Finished
-
-
-class StartGamePayload(BaseModel):
-    player_ids: list[str]
-    assassination_attempts: int | None = Field(default=None)
-    roles: list[str] | None = Field(default=None)
-    known_roles: dict[str, list[str]] | None = Field(default=None)
 
 
 class SubmitAssassinationTargetPayload(BaseModel):

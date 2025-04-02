@@ -379,7 +379,7 @@ def test_handle_game_ended(
     player_service.get_players.return_value = players
 
     # When
-    game_service.handle_game_ended(GAME_ID)
+    game_service.end_game(GAME_ID)
 
     # Then
     game.status = GameStatus.Finished

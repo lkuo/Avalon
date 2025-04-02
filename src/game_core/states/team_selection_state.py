@@ -1,12 +1,13 @@
-from typing import Optional
+from pydantic import BaseModel
 
 from game_core.constants.action_type import ActionType
 from game_core.constants.state_name import StateName
-from game_core.constants.vote_result import VoteResult
 from game_core.entities.action import Action
-from game_core.services.quest_service import QuestService
+from game_core.services.event_service import EventService
+from game_core.services.game_service import GameService
+from game_core.services.player_service import PlayerService
 from game_core.services.round_service import RoundService
-from game_core.states.state import State
+from game_core.states.state import State, InvalidActionTypeException, InvalidInputException
 
 
 class TeamSelectionState(State):
@@ -16,36 +17,37 @@ class TeamSelectionState(State):
     Transitions to RoundVoting State
     """
 
-    def __init__(self, quest_service: QuestService, round_service: RoundService):
+    def __init__(self, game_service: GameService, player_service: PlayerService, round_service: RoundService,
+                 event_service: EventService):
         super().__init__(StateName.TeamSelection)
-        self._round_voting_state = None
-        self._end_game_state = None
-        self._quest_service = quest_service
+        self._game_service = game_service
+        self._player_service = player_service
         self._round_service = round_service
+        self._event_service = event_service
 
-    def set_states(self, round_voting_state: State, end_game_state: State) -> None:
-        self._round_voting_state = round_voting_state
-        self._end_game_state = end_game_state
-
-    def handle(self, action: Action) -> State:
+    def handle(self, action: Action) -> None:
         if action.type != ActionType.SubmitTeamProposal:
-            raise ValueError(
-                f"TeamSelectionState expects only SubmitTeamProposal, got {action.type.value}"
-            )
+            raise InvalidActionTypeException([ActionType.SubmitTeamProposal], action.type)
 
-        self._round_service.handle_submit_team_proposal(action)
+        game_id = action.game_id
+        payload = SubmitTeamProposalPayload(**action.payload)
+        game = self._game_service.get_game(game_id)
+        game_round = self._round_service.get_current_round(game_id)
+        team_size = game.quest_team_size[game_round.quest_number]
+        if len(payload.team_member_ids) != team_size:
+            raise InvalidInputException("")
+        players = self._player_service.get_players(game_id)
+        player_ids = set([p.id for p in players])
+        if any([tm_id not in player_ids for tm_id in payload.team_member_ids]):
+            raise InvalidInputException("invalid team_member_ids")
+        game_round = self._round_service.get_current_round(game_id)
+        game_round.team_member_ids = payload.team_member_ids
+        self._round_service.update_round(game_round)
+        game.state = StateName.RoundVoting.value
+        self._game_service.update_game(game)
+        self._event_service.create_team_proposal_submitted_event(game_id, game_round.quest_number,
+                                                                 game_round.round_number, payload.team_member_ids)
 
-        return self._round_voting_state
 
-    def on_enter(self, game_id: str) -> Optional[State]:
-        """
-        Verifies the previous state, then creates a round ana a quest if needed.
-        Rotates the leader
-        :param game_id:
-        :return:
-        """
-        if self._quest_service.is_final_proposal_failed(game_id):
-            self._quest_service.complete_current_quest(game_id, VoteResult.Fail)
-        if self._quest_service.has_majority(game_id):
-            return self._end_game_state
-        self._quest_service.handle_on_enter_team_selection_state(game_id)
+class SubmitTeamProposalPayload(BaseModel):
+    team_member_ids: list[str]

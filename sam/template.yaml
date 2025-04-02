@@ -332,6 +332,9 @@ Resources:
   OnActionFunction:
     Type: AWS::Serverless::Function
     Properties:
+      Environment:
+        Variables:
+          LOG_LEVEL: DEBUG
       CodeUri: ../src/
       Handler: aws.lambdas.on_action.lambda_handler
       Runtime: python3.12

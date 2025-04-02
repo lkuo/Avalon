@@ -10,7 +10,7 @@ from aws.dynamodb_repository import DynamoDBRepository
 from aws.websocket_comm_service import WebSocketCommService
 
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+logger.setLevel(os.getenv("LOG_LEVEL", "INFO"))
 
 
 def lambda_handler(event, context):

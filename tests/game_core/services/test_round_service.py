@@ -77,7 +77,7 @@ def test_round_service_create_round(mocker, round_service, repository, event_ser
         rnd.round_number = i
         rnd.leader_id = player_ids[i - 1]
         rounds.append(rnd)
-    repository.get_rounds.return_value = rounds
+    repository.get_quest_rounds.return_value = rounds
     game = mocker.MagicMock()
     game_config = mocker.MagicMock(spec=GameConfig)
     number_of_players = 4

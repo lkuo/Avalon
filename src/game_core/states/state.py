@@ -1,6 +1,6 @@
 from abc import abstractmethod, ABC
-from typing import Self, Optional
 
+from game_core.constants.action_type import ActionType
 from game_core.constants.state_name import StateName
 from game_core.entities.action import Action
 
@@ -15,11 +15,15 @@ class State(ABC):
         return self._name
 
     @abstractmethod
-    def handle(self, action: Action) -> Optional[Self]:
+    def handle(self, action: Action) -> None:
         pass
 
-    def on_enter(self, game_id: str) -> Optional[Self]:
-        pass
 
-    def on_exit(self, game_id: str) -> None:
-        pass
+class InvalidInputException(Exception):
+    error_code = 400
+
+
+class InvalidActionTypeException(InvalidInputException):
+    def __init__(self, expected: list[ActionType], actual: ActionType):
+        self.message = f"Invalid action type: {actual}, expected one of {expected}"
+        super().__init__(self.message)

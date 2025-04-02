@@ -9,7 +9,7 @@ from game_core.constants.role import Role
 from game_core.constants.state_name import StateName
 from game_core.constants.vote_result import VoteResult
 from game_core.entities.event import Event
-from game_core.entities.game import Game, GameConfig
+from game_core.entities.game import Game
 from game_core.entities.player import Player
 from game_core.entities.quest import Quest
 from game_core.entities.quest_vote import QuestVote
@@ -32,19 +32,23 @@ class DynamoDBRepository(Repository):
         item = {
             "pk": game_id,
             "sk": "game",
-            "status": GameStatus.NotStarted.value,
             "state": StateName.GameSetup.value,
-            "config": None,
+            "quest_team_size": {},
+            "roles": [],
+            "known_roles": {},
+            "assassination_attempts": 0,
             "player_ids": [],
+            "result": None,
         }
         self._table.put_item(Item=item)
         return Game(
             game_id,
-            GameStatus.NotStarted,
             StateName.GameSetup,
-            None,
+            {},
             [],
-            None,
+            {},
+            [],
+            0,
             None,
         )
 
@@ -53,20 +57,14 @@ class DynamoDBRepository(Repository):
         if "Item" not in response:
             raise ValueError(f"Game {game_id} not found")
         item = response["Item"]
-
-        game_config = GameConfig(
-            quest_team_size={int(k): int(v) for k, v in item["config"]["quest_team_size"].items()},
-            roles=item["config"]["roles"],
-            known_roles=item["config"]["known_roles"],
-            assassination_attempts=item["config"]["assassination_attempts"],
-        ) if item["config"] else None
         return Game(
             id=item["pk"],
-            status=GameStatus(item["status"]),
             state=StateName(item["state"]),
-            config=game_config,
+            quest_team_size={int(k): int(v) for k, v in item.get("quest_team_size", {}).items()},
+            roles=item.get("roles"),
+            known_roles=item.get("known_roles"),
             player_ids=item.get("player_ids"),
-            assassination_attempts=item.get("assassination_attempts"),
+            assassination_attempts=item.get("assassination_attempts", 0),
             result=item.get("result"),
         )
 
@@ -75,27 +73,21 @@ class DynamoDBRepository(Repository):
             "pk": game.id,
             "sk": "game",
         }
-        update_expression = "SET #status = :status, #state = :state, #config = :config, #player_ids = :player_ids, #assassination_attempts = :assassination_attempts, #result = :result"
+        update_expression = "SET #state = :state, #quest_team_size = :quest_team_size, #roles = :roles, #known_roles = :known_roles, #player_ids = :player_ids, #assassination_attempts = :assassination_attempts, #result = :result"
         expression_attribute_names = {
-            "#status": "status",
             "#state": "state",
-            "#config": "config",
+            "#quest_team_size": "quest_team_size",
+            "#roles": "roles",
+            "#known_roles": "known_roles",
             "#player_ids": "player_ids",
             "#assassination_attempts": "assassination_attempts",
             "#result": "result",
         }
-        config = None
-        if game.config:
-            config = {
-                "quest_team_size": {str(k): str(v) for k, v in game.config.quest_team_size.items()},
-                "roles": game.config.roles,
-                "known_roles": game.config.known_roles,
-                "assassination_attempts": game.config.assassination_attempts,
-            }
         expression_attribute_values = {
-            ":status": game.status.value,
-            ":state": game.state.value,
-            ":config": config,
+            ":state": game.state,
+            ":quest_team_size": {str(k): str(v) for k, v in game.quest_team_size.items()},
+            ":roles": game.roles,
+            ":known_roles": game.known_roles,
             ":player_ids": game.player_ids,
             ":assassination_attempts": game.assassination_attempts,
             ":result": game.result,
@@ -109,12 +101,12 @@ class DynamoDBRepository(Repository):
         return game
 
     def put_event(
-        self,
-        game_id: str,
-        event_type: EventType,
-        recipients: list[str],
-        payload: dict[str, Any],
-        timestamp: str,
+            self,
+            game_id: str,
+            event_type: EventType,
+            recipients: list[str],
+            payload: dict[str, Any],
+            timestamp: str,
     ) -> Event:
         event_id = uuid.uuid4().hex
         item = {
@@ -160,9 +152,8 @@ class DynamoDBRepository(Repository):
         return events
 
     def get_player(self, player_id: str) -> Player:
-        # player_id = gameId_player_playerId
-        game_id, sk = player_id.split("_", 1)
-        response = self._table.get_item(Key={"pk": game_id, "sk": sk})
+        game_id, player_id = player_id.split("_", 1)
+        response = self._table.get_item(Key={"pk": game_id, "sk": player_id})
         if "Item" not in response:
             raise ValueError(f"Player {player_id} not found")
         item = response["Item"]
@@ -175,10 +166,11 @@ class DynamoDBRepository(Repository):
             known_player_ids=item.get("known_player_ids", []),
         )
 
-    def put_player(self, player_id: str, game_id: str, name: str, secret: str) -> Player:
+    def put_player(self, player_id: str, name: str, secret: str) -> Player:
+        game_id, player_id = player_id.split("_", 1)
         item = {
             "pk": game_id,
-            "sk": f"player_{player_id}",
+            "sk": player_id,
             "name": name,
             "secret": secret,
             "role": None,
@@ -186,7 +178,7 @@ class DynamoDBRepository(Repository):
         }
         self._table.put_item(Item=item)
         return Player(
-            id=f"{game_id}_player_{player_id}",
+            id=f"{game_id}_{player_id}",
             game_id=game_id,
             name=name,
             secret=secret,
@@ -394,7 +386,7 @@ class DynamoDBRepository(Repository):
         ]
 
     def put_round(
-        self, game_id: str, quest_number: int, round_number: int, leader_id: str
+            self, game_id: str, quest_number: int, round_number: int, leader_id: str
     ) -> Round:
         item = {
             "pk": game_id,
@@ -469,12 +461,12 @@ class DynamoDBRepository(Repository):
         )
 
     def put_round_vote(
-        self,
-        game_id: str,
-        quest_number: int,
-        round_number: int,
-        player_id: str,
-        vote_result: VoteResult,
+            self,
+            game_id: str,
+            quest_number: int,
+            round_number: int,
+            player_id: str,
+            vote_result: VoteResult,
     ) -> RoundVote:
         item = {
             "pk": game_id,
@@ -495,7 +487,7 @@ class DynamoDBRepository(Repository):
         )
 
     def get_round_votes(
-        self, game_id: str, quest_number: int, round_number: int
+            self, game_id: str, quest_number: int, round_number: int
     ) -> list[RoundVote]:
         key_condition_expression = "pk = :pk AND begins_with(sk, :sk_prefix)"
         expression_attribute_values = {":pk": game_id, ":sk_prefix": f"vote_round_{quest_number}_{round_number}_"}

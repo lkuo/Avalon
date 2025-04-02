@@ -26,14 +26,14 @@ class EndGameState(State):
         self._game_service.handle_submit_assassination_target(action)
 
         if self._game_service.get_assassination_attempts(action.game_id) == 0:
-            self._game_service.handle_game_ended(action.game_id)
+            self._game_service.end_game(action.game_id)
             return None
 
         return None if self._game_service.is_game_finished(action.game_id) else self
 
     def on_enter(self, game_id: str) -> None:
         if self._game_service.get_assassination_attempts(game_id) == 0:
-            self._game_service.handle_game_ended(game_id)
+            self._game_service.end_game(game_id)
             return
 
         self._game_service.on_enter_end_game_state(game_id)

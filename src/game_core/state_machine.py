@@ -1,9 +1,10 @@
 import logging
+import os
 
+from game_core.comm_service import CommService
 from game_core.constants.state_name import StateName
 from game_core.entities.action import Action
 from game_core.repository import Repository
-from game_core.comm_service import CommService
 from game_core.services.event_service import EventService
 from game_core.services.game_service import GameService
 from game_core.services.player_service import PlayerService
@@ -16,7 +17,7 @@ from game_core.states.round_voting_state import RoundVotingState
 from game_core.states.team_selection_state import TeamSelectionState
 
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+logger.setLevel(os.getenv("LOG_LEVEL", "INFO"))
 
 
 class StateMachine:
@@ -40,18 +41,32 @@ class StateMachine:
     def _setup_states(self) -> None:
         game = self._repository.get_game(self._game_id)
 
-        game_setup_state = GameSetupState(self._game_service, self._player_service)
-        team_selection_state = TeamSelectionState(
-            self._quest_service, self._round_service
+        game_setup_state = GameSetupState(
+            self._game_service,
+            self._quest_service,
+            self._round_service,
+            self._player_service,
+            self._event_service
         )
-        round_voting_state = RoundVotingState(self._round_service)
-        quest_voting_state = QuestVotingState(self._quest_service)
+        team_selection_state = TeamSelectionState(
+            self._game_service,
+            self._player_service,
+            self._round_service,
+            self._event_service
+        )
+        round_voting_state = RoundVotingState(
+            self._game_service,
+            self._quest_service,
+            self._round_service,
+            self._event_service
+        )
+        quest_voting_state = QuestVotingState(
+            self._game_service,
+            self._player_service,
+            self._quest_service,
+            self._round_service,
+            self._event_service)
         end_game_state = EndGameState(self._game_service)
-
-        game_setup_state.set_states(team_selection_state)
-        team_selection_state.set_states(round_voting_state, quest_voting_state)
-        round_voting_state.set_states(team_selection_state, quest_voting_state)
-        quest_voting_state.set_states(team_selection_state, end_game_state)
 
         self.state_name_map = {
             StateName.GameSetup: game_setup_state,
@@ -68,12 +83,4 @@ class StateMachine:
     def handle_action(self, action: Action) -> None:
         if action.payload is None:
             raise ValueError("Action payload is None")
-        next_state = self._current_state.handle(action)
-        if next_state != self._current_state:
-            self._current_state.on_exit(self._game_id)
-            self._current_state = next_state.on_enter(self._game_id) or next_state
-
-        game = self._repository.get_game(self._game_id)
-        logger.info(f"Game {game}")
-        game.state = self._current_state.name
-        self._repository.update_game(game)
+        self._current_state.handle(action)

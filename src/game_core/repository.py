@@ -4,7 +4,7 @@ from typing import Any
 from game_core.constants.event_type import EventType
 from game_core.constants.vote_result import VoteResult
 from game_core.entities.event import Event
-from game_core.entities.game import Game, GameConfig
+from game_core.entities.game import Game
 from game_core.entities.player import Player
 from game_core.entities.quest import Quest
 from game_core.entities.quest_vote import QuestVote
@@ -38,7 +38,7 @@ class Repository(ABC):
         pass
 
     @abstractmethod
-    def put_player(self, player_id: str, game_id: str, name: str, secret: str) -> Player:
+    def put_player(self, player_id: str, name: str, secret: str) -> Player:
         pass
 
     @abstractmethod
