@@ -122,7 +122,8 @@ def players(dynamodb_repository, game):
 
 def test_game_core(dynamodb_repository, comm_service, game, players):
     # Given
-    sm = StateMachine(comm_service, dynamodb_repository, game.id)
+    def sm():
+        return StateMachine(comm_service, dynamodb_repository, game.id)
 
     # Start Game
     start_game_action = Action(
@@ -132,7 +133,7 @@ def test_game_core(dynamodb_repository, comm_service, game, players):
         type=ActionType.StartGame,
         payload={"player_ids": [player.id for player in players]},
     )
-    sm.handle_action(start_game_action)
+    sm().handle_action(start_game_action)
 
     role_to_players = defaultdict(list)
     for player in players:
@@ -140,12 +141,9 @@ def test_game_core(dynamodb_repository, comm_service, game, players):
         assert event.type == EventType.GameStarted, event
         role = Role(event.payload["role"])
         role_to_players[role].append(player.id)
-        event = comm_service.records[player.id].popleft()
-        assert event.type == EventType.QuestStarted, event
-        assert event.payload["quest_number"] == 1
-        event = comm_service.records[player.id].popleft()
-        assert event.type == EventType.RoundStarted
-        assert event.payload["round_number"] == 1
+
+    assert_quest_started_event(comm_service, players, 1)
+    assert_round_started_event(comm_service, players, 1)
 
     assert len(role_to_players[Role.Merlin]) == 1
     assert len(role_to_players[Role.Percival]) == 1
@@ -155,161 +153,180 @@ def test_game_core(dynamodb_repository, comm_service, game, players):
     assert len(role_to_players[Role.Oberon]) == 1
     assert len(role_to_players[Role.Villager]) == 4
 
-    event = comm_service.records[players[0].id].popleft()
+    # Quest 1
+    # Round 1
+    leader = players[0]
+    assert_team_selection_requested_event(comm_service, leader, 1, 1, 3)
+    submit_team_proposal(game.id, leader, players[:3], sm())
+    assert_team_proposal_submitted_event(comm_service, players, players[:3])
+    vote_team_proposal(game.id, players[:3], players[3:], sm())
+    assert_round_vote_cast_event(comm_service, players, 1, 1)
+    player_votes = {p.id: VoteResult.Pass for p in players[:3]} | {p.id: VoteResult.Fail for p in players[3:]}
+    assert_round_completed_event(comm_service, players, 1, 1, player_votes)
+    assert_event(comm_service, players, EventType.RoundStarted)
+
+    # Round 2
+    leader = players[1]
+    assert_team_selection_requested_event(comm_service, leader, 1, 2, 3)
+    submit_team_proposal(game.id, leader, players[1:4], sm())
+    assert_team_proposal_submitted_event(comm_service, players, players[1:4])
+    vote_team_proposal(game.id, players, [], sm())
+    assert_round_vote_cast_event(comm_service, players, 1, 2)
+    assert_event(comm_service, players, EventType.RoundCompleted)
+    assert_quest_vote_started_event(comm_service, players, 1)
+    assert_quest_vote_requested_event(comm_service, players[1:4], 1)
+
+    # Vote Quest 1
+    vote_quest(game.id, 1, players[1:4], [], sm())
+    assert_quest_vote_cast_event(comm_service, players, players[1:4], 1)
+    assert_quest_completed_event(comm_service, players, 1, VoteResult.Pass)
+
+    # Quest 2
+    # Round 1
+    leader = players[2]
+    assert_event(comm_service, players, EventType.QuestStarted)
+    assert_event(comm_service, players, EventType.RoundStarted)
+    assert_team_selection_requested_event(comm_service, leader, 2, 1, 4)
+    submit_team_proposal(game.id, players[2], players[1:5], sm())
+    vote_team_proposal(game.id, players, [], sm())
+    clear_comm_service(comm_service)
+    vote_quest(game.id, 2, players[1:5], [], sm())
+    assert_quest_vote_cast_event(comm_service, players, players[1:5], 2)
+    assert_quest_completed_event(comm_service, players, 2, VoteResult.Pass)
+
+
+def assert_quest_completed_event(comm_service, players, quest_number, result):
+    for p in players:
+        event = comm_service.records[p.id].popleft()
+        assert event.type == EventType.QuestCompleted, event
+        assert event.payload["quest_number"] == quest_number
+        assert event.payload["result"] == result.value
+
+
+def assert_team_selection_requested_event(comm_service, leader, quest_number, round_number, num_of_players):
+    event = comm_service.records[leader.id].popleft()
     assert event.type == EventType.TeamSelectionRequested, event
-    assert event.payload["number_of_players"] == 3
-    assert event.payload["quest_number"] == 1
-    assert event.payload["round_number"] == 1
+    assert event.payload["number_of_players"] == num_of_players
+    assert event.payload["quest_number"] == quest_number
+    assert event.payload["round_number"] == round_number
 
-    # Team Selection
-    # Quest 1 Round 1
-    sm = StateMachine(comm_service, dynamodb_repository, game.id)
-    team_selection_action = Action(
-        id=uuid.uuid4().hex,
-        game_id=game.id,
-        player_id=players[0].id,
-        type=ActionType.SubmitTeamProposal,
-        payload={
-            "team_member_ids": [players[0].id, players[1].id, players[2].id],
-        },
-    )
-    sm.handle_action(team_selection_action)
-    for player in players:
-        event = comm_service.records[player.id].popleft()
+
+def assert_team_proposal_submitted_event(comm_service, players, team_members):
+    for p in players:
+        event = comm_service.records[p.id].popleft()
         assert event.type == EventType.TeamProposalSubmitted, event
-        assert event.payload["team_member_ids"] == [players[0].id, players[1].id, players[2].id]
+        assert event.payload["team_member_ids"] == [m.id for m in team_members]
 
-    # Round Voting
-    for player in players[:7]:
-        action = Action(
-            id=uuid.uuid4().hex,
-            game_id=game.id,
-            player_id=player.id,
-            type=ActionType.CastRoundVote,
-            payload={
-                "player_id": player.id,
-                "is_approved": False
-            },
-        )
-        sm = StateMachine(comm_service, dynamodb_repository, game.id)
-        sm.handle_action(action)
 
-    for p in players:
-        for _p in players[:7]:
-            event = comm_service.records[p.id].popleft()
-            assert event.type == EventType.RoundVoteCast, event
-            assert event.payload["player_id"] == _p.id
-            assert event.payload["quest_number"] == 1
-            assert event.payload["round_number"] == 1
+def assert_quest_vote_requested_event(comm_service, team_members, quest_number):
+    for m in team_members:
+        event = comm_service.records[m.id].popleft()
+        assert event.type == EventType.QuestVoteRequested, event
+        assert event.payload["quest_number"] == quest_number
 
-    for player in players[7:]:
-        action = Action(
-            id=uuid.uuid4().hex,
-            game_id=game.id,
-            player_id=player.id,
-            type=ActionType.CastRoundVote,
-            payload={
-                "player_id": player.id,
-                "is_approved": True
-            },
-        )
-        sm = StateMachine(comm_service, dynamodb_repository, game.id)
-        sm.handle_action(action)
 
-    for p in players:
-        for _p in players[7:]:
-            event = comm_service.records[p.id].popleft()
-            assert event.type == EventType.RoundVoteCast, event
-            assert event.payload["player_id"] == _p.id
-            assert event.payload["quest_number"] == 1
-            assert event.payload["round_number"] == 1
-
-    player_votes = {p.id: VoteResult.Fail.value if i < 7 else VoteResult.Pass.value for i, p in enumerate(players)}
+def assert_round_completed_event(comm_service, players, quest_number, round_number, player_votes):
     for p in players:
         event = comm_service.records[p.id].popleft()
         assert event.type == EventType.RoundCompleted, event
-        assert event.payload["quest_number"] == 1
-        assert event.payload["round_number"] == 1
-        assert event.payload["player_votes"] == player_votes
-        event = comm_service.records[p.id].popleft()
-        assert event.type == EventType.RoundStarted, event
-    event = comm_service.records[players[1].id].popleft()
-    assert event.type == EventType.TeamSelectionRequested, event
+        assert event.payload["quest_number"] == quest_number
+        assert event.payload["round_number"] == round_number
+        assert event.payload["player_votes"] == {k: v.value for k, v in player_votes.items()}
 
-    action = Action(
-        id=uuid.uuid4().hex,
-        game_id=game.id,
-        player_id=players[1].id,
-        type=ActionType.SubmitTeamProposal,
-        payload={
-            "team_member_ids": [players[1].id, players[2].id, players[3].id],
-        },
-    )
-    sm = StateMachine(comm_service, dynamodb_repository, game.id)
-    sm.handle_action(action)
+
+def assert_event(comm_service, players, event_type):
     for p in players:
         event = comm_service.records[p.id].popleft()
-        assert event.type == EventType.TeamProposalSubmitted, event
-        assert event.payload["team_member_ids"] == [players[1].id, players[2].id, players[3].id]
+        assert event.type == event_type, event
+
+
+def assert_quest_started_event(comm_service, players, quest_number):
+    for p in players:
+        event = comm_service.records[p.id].popleft()
+        assert event.type == EventType.QuestStarted, event
+        assert event.payload["quest_number"] == quest_number
+
+
+def assert_round_started_event(comm_service, players, round_number):
+    for p in players:
+        event = comm_service.records[p.id].popleft()
+        assert event.type == EventType.RoundStarted, event
+        assert event.payload["round_number"] == round_number
+
+
+def vote_team_proposal(game_id, approves, rejects, statemachine):
+    payloads = [(p.id, True) for p in approves] + [(p.id, False) for p in rejects]
+    for pid, is_approved in payloads:
         action = Action(
             id=uuid.uuid4().hex,
-            game_id=game.id,
-            player_id=p.id,
+            game_id=game_id,
+            player_id=pid,
             type=ActionType.CastRoundVote,
             payload={
-                "player_id": p.id,
-                "is_approved": True
+                "player_id": pid,
+                "is_approved": is_approved
             },
         )
-        sm = StateMachine(comm_service, dynamodb_repository, game.id)
-        sm.handle_action(action)
+        statemachine.handle_action(action)
+
+
+def assert_round_vote_cast_event(comm_service, players, quest_number, round_number):
     for p in players:
         for _p in players:
             event = comm_service.records[p.id].popleft()
             assert event.type == EventType.RoundVoteCast, event
             assert event.payload["player_id"] == _p.id
-            assert event.payload["quest_number"] == 1
-            assert event.payload["round_number"] == 2
-        event = comm_service.records[p.id].popleft()
-        assert event.type == EventType.RoundCompleted, event
+            assert event.payload["quest_number"] == quest_number
+            assert event.payload["round_number"] == round_number
+
+
+def assert_quest_vote_started_event(comm_service, players, quest_number):
+    for p in players:
         event = comm_service.records[p.id].popleft()
         assert event.type == EventType.QuestVoteStarted, event
-        assert event.payload["quest_number"] == 1
+        assert event.payload["quest_number"] == quest_number
 
-    for i in [1, 2, 3]:
-        event = comm_service.records[players[i].id].popleft()
-        assert event.type == EventType.QuestVoteRequested, event
-        assert event.payload["quest_number"] == 1
 
-    for i in [1, 2, 3]:
-        action = Action(
-            id=uuid.uuid4().hex,
-            game_id=game.id,
-            player_id=players[i].id,
-            type=ActionType.CastQuestVote,
-            payload={
-                "player_id": players[i].id,
-                "quest_number": 1,
-                "is_approved": True
-            },
-        )
-        sm = StateMachine(comm_service, dynamodb_repository, game.id)
-        sm.handle_action(action)
+def assert_quest_vote_cast_event(comm_service, players, team_members, quest_number):
     for p in players:
-        for i in [1, 2, 3]:
+        for m in team_members:
             event = comm_service.records[p.id].popleft()
             assert event.type == EventType.QuestVoteCast, event
-            assert event.payload["player_id"] == players[i].id
-            assert event.payload["quest_number"] == 1
-    for p in players:
-        event = comm_service.records[p.id].popleft()
-        assert event.type == EventType.QuestCompleted, event
-        assert event.payload["quest_number"] == 1
-        assert event.payload["result"] == VoteResult.Pass.value
-        event = comm_service.records[p.id].popleft()
-        assert event.type == EventType.QuestStarted, event
-        event = comm_service.records[p.id].popleft()
-        assert event.type == EventType.RoundStarted, event
+            assert event.payload["player_id"] == m.id
+            assert event.payload["quest_number"] == quest_number
 
-    event = comm_service.records[players[2].id].popleft()
-    assert event.type == EventType.TeamSelectionRequested, event
+
+def vote_quest(game_id, quest_number, approves, rejects, statemachine):
+    payloads = [(p.id, True) for p in approves] + [(p.id, False) for p in rejects]
+    for pid, is_approved in payloads:
+        action = Action(
+            id=uuid.uuid4().hex,
+            game_id=game_id,
+            player_id=pid,
+            type=ActionType.CastQuestVote,
+            payload={
+                "player_id": pid,
+                "quest_number": quest_number,
+                "is_approved": is_approved
+            },
+        )
+        statemachine.handle_action(action)
+
+
+def submit_team_proposal(game_id, leader, team_members, statemachine):
+    team_member_ids = [p.id for p in team_members]
+    action = Action(
+        id=uuid.uuid4().hex,
+        game_id=game_id,
+        player_id=leader.id,
+        type=ActionType.SubmitTeamProposal,
+        payload={
+            "team_member_ids": team_member_ids,
+        },
+    )
+    statemachine.handle_action(action)
+
+
+def clear_comm_service(comm_service):
+    for k in comm_service.records.keys():
+        comm_service.records[k].clear()

@@ -84,7 +84,7 @@ class DynamoDBRepository(Repository):
             "#result": "result",
         }
         expression_attribute_values = {
-            ":state": game.state,
+            ":state": game.state.value,
             ":quest_team_size": {str(k): str(v) for k, v in game.quest_team_size.items()},
             ":roles": game.roles,
             ":known_roles": game.known_roles,

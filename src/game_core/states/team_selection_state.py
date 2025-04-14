@@ -43,7 +43,7 @@ class TeamSelectionState(State):
         game_round = self._round_service.get_current_round(game_id)
         game_round.team_member_ids = payload.team_member_ids
         self._round_service.update_round(game_round)
-        game.state = StateName.RoundVoting.value
+        game.state = StateName.RoundVoting
         self._game_service.update_game(game)
         self._event_service.create_team_proposal_submitted_event(game_id, game_round.quest_number,
                                                                  game_round.round_number, payload.team_member_ids)

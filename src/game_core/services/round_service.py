@@ -26,7 +26,7 @@ class RoundService:
         game_id = game.id
         rounds = self._repository.get_rounds(game_id)
         current_round = self._get_last_round(rounds)
-        round_number = 1 if not current_round else current_round.round_number + 1
+        round_number = 1 if not current_round or current_round.quest_number != quest_number else current_round.round_number + 1
         leader_id = self._get_leader_id(rounds, game.player_ids)
         next_round = self._repository.put_round(game_id, quest_number, round_number, leader_id)
         self._event_service.create_round_started_event(game_id, quest_number, round_number, leader_id)

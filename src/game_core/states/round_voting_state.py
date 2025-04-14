@@ -81,7 +81,7 @@ class RoundVotingState(State):
         )
         rounds = self._round_service.get_quest_rounds(action.game_id, current_round.quest_number)
         if current_round.result == VoteResult.Pass or len(rounds) == 5:
-            game.state = StateName.QuestVoting.value
+            game.state = StateName.QuestVoting
             current_quest = self._quest_service.get_current_quest(action.game_id)
             current_quest.team_member_ids = current_round.team_member_ids
             self._quest_service.update_quest(current_quest)
@@ -96,7 +96,7 @@ class RoundVotingState(State):
                 current_round.team_member_ids
             )
         else:
-            game.state = StateName.TeamSelection.value
+            game.state = StateName.TeamSelection
             game_round = self._round_service.create_round(game, current_round.quest_number)
             self._event_service.create_team_selection_requested_event(
                 action.game_id,

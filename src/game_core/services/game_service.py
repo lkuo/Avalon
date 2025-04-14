@@ -49,7 +49,7 @@ class GameService:
         game.roles = roles
         game.known_roles = known_roles
         game.assassination_attempts = assassination_attempts
-        game.state = StateName.TeamSelection.value
+        game.state = StateName.TeamSelection
         game.quest_team_size = DEFAULT_QUEST_TEAM_SIZE[num_players]
         return self.update_game(game)
 

@@ -83,8 +83,10 @@ class QuestVotingState(State):
         game = self._game_service.get_game(action.game_id)
         if not is_game:
             quest = self._quest_service.create_quest(action.game_id)
-            game_round = self._round_service.create_round(game, current_quest.quest_number + 1)
+            game_round = self._round_service.create_round(game, quest.quest_number)
             number_of_players = game.quest_team_size[quest.quest_number]
+            game.state = StateName.TeamSelection
+            self._game_service.update_game(game)
             self._event_service.create_team_selection_requested_event(
                 action.game_id,
                 game_round.leader_id,
