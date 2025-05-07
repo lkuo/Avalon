@@ -8,7 +8,6 @@ from game_core.constants.config import DEFAULT_TEAM_SIZE_ROLES, KNOWN_ROLES, DEF
 from game_core.constants.game_status import GameStatus
 from game_core.constants.role import Role
 from game_core.constants.state_name import StateName
-from game_core.entities.action import Action
 from game_core.entities.game import Game
 from game_core.entities.player import Player
 from game_core.repository import Repository
@@ -37,7 +36,7 @@ class GameService:
 
         return game
 
-    def start_game(self, game_id: str, player_ids: list[str], assassination_attempt: int | None) -> Game:
+    def init_game(self, game_id: str, player_ids: list[str], assassination_attempt: int | None) -> Game:
         num_players = len(player_ids)
         roles = DEFAULT_TEAM_SIZE_ROLES[num_players]
         known_roles = KNOWN_ROLES
@@ -75,16 +74,6 @@ class GameService:
         game = self.get_game(game_id)
         return game.assassination_attempts
 
-    def on_enter_end_game_state(self, game_id: str) -> None:
-        assassin = self._get_assassin(game_id)
-        assassination_attempts = self.get_assassination_attempts(game_id)
-        self._event_service.create_assassination_started_event(
-            game_id, assassination_attempts
-        )
-        self._event_service.create_assassination_target_requested_event(
-            game_id, assassin.id
-        )
-
     def _get_assassin(self, game_id: str) -> Player:
         players = self._player_service.get_players(game_id)
         assassins = [player for player in players if player.role == Role.Assassin]
@@ -94,20 +83,6 @@ class GameService:
             )
         assassin = assassins[0]
         return assassin
-
-    def handle_submit_assassination_target(self, action: Action) -> None:
-        SubmitAssassinationTargetPayload(**action.payload)
-        target = self._player_service.get_player(action.payload["target_id"])
-        attempts = self.get_assassination_attempts(action.game_id)
-        game = self.get_game(action.game_id)
-        game.assassination_attempts = attempts - 1
-        self._repository.update_game(game)
-        is_successful = target.role == Role.Merlin
-        self._event_service.create_assassination_event(
-            action.game_id, target.id, is_successful
-        )
-        if is_successful:
-            self.end_game(action.game_id)
 
     def end_game(self, game_id: str) -> None:
         game = self._repository.get_game(game_id)
@@ -119,7 +94,7 @@ class GameService:
 
     def is_game_finished(self, game_id: str) -> bool:
         game = self.get_game(game_id)
-        return game.status == GameStatus.Finished
+        return game.result is not None
 
 
 class SubmitAssassinationTargetPayload(BaseModel):

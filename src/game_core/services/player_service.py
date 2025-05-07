@@ -2,6 +2,7 @@ import logging
 import os
 import random
 import uuid
+from typing import Any
 
 from game_core.constants.role import Role
 from game_core.entities.game import Game
@@ -32,6 +33,20 @@ class PlayerService:
     def get_players(self, game_id: str) -> list[Player]:
         return self._repository.get_players(game_id)
 
+    def get_assassin(self, game_id: str) -> Player:
+        players = self.get_players(game_id)
+        assassins = [player for player in players if player.role == Role.Assassin]
+        if len(assassins) != 1:
+            raise ValueError(
+                f"Game {game_id} has {len(assassins)} assassins, expected 1"
+            )
+        assassin = assassins[0]
+        return assassin
+
+    def get_player_roles(self, game_id: str) -> dict[str, Any]:
+        players = self.get_players(game_id)
+        return {player.id: player.role.value for player in players}
+
     def assign_roles(self, players: list[Player], game: Game) -> list[Player]:
         roles = game.roles
         known_roles = game.known_roles
@@ -55,4 +70,3 @@ class PlayerService:
             logger.debug(f"player: {player}, known_player_ids: {player.known_player_ids}")
             self._repository.update_player(player)
         return players
-

@@ -9,8 +9,7 @@ from game_core.entities.action import Action
 from game_core.services.event_service import EventService
 from game_core.services.game_service import GameService
 from game_core.services.player_service import PlayerService
-from game_core.services.quest_service import QuestService
-from game_core.services.round_service import RoundService
+from game_core.services.state_service import StateService
 from game_core.states.state import State, InvalidActionTypeException, InvalidInputException
 
 logger = logging.getLogger()
@@ -25,16 +24,14 @@ class GameSetupState(State):
 
     def __init__(
             self,
+            state_service: StateService,
             game_service: GameService,
-            quest_service: QuestService,
-            round_service: RoundService,
             player_service: PlayerService,
             event_service: EventService,
     ):
         super().__init__(StateName.GameSetup)
+        self._state_service = state_service
         self._game_service = game_service
-        self._quest_service = quest_service
-        self._round_service = round_service
         self._player_service = player_service
         self._event_service = event_service
 
@@ -42,29 +39,18 @@ class GameSetupState(State):
         if action.type == ActionType.JoinGame:
             payload = JoinGamePayload(**action.payload)
             self._player_service.save_player(action.player_id, payload.player_name)
+            self._event_service.create_player_joined_event(action.player_id, action.game_id, payload.player_name)
         elif action.type == ActionType.StartGame:
             game_id = action.game_id
             payload = StartGamePayload(**action.payload)
             players = self._player_service.get_players(game_id)
+
             if (found := set([player.id for player in players])) != (given := set(payload.player_ids)):
-                logger.error(f"Player ids do not match, found: {found}, given: {given}")
-                raise InvalidInputException()
+                raise InvalidInputException(f"Player ids do not match, found: {found}, given: {given}")
 
-            game = self._game_service.start_game(game_id, payload.player_ids, payload.assassination_attempts)
+            game = self._game_service.init_game(game_id, payload.player_ids, payload.assassination_attempts)
             players = self._player_service.assign_roles(players, game)
-            self._event_service.create_game_started_events(game_id, players)
-            quest = self._quest_service.create_quest(game_id)
-            game_round = self._round_service.create_round(game, quest.quest_number)
-
-            game = self._game_service.get_game(game_id)
-            number_of_players = game.quest_team_size[quest.quest_number]
-            self._event_service.create_team_selection_requested_event(
-                game_id,
-                game_round.leader_id,
-                quest.quest_number,
-                game_round.round_number,
-                number_of_players
-            )
+            self._state_service.start_game(game_id, players)
         else:
             raise InvalidActionTypeException([ActionType.JoinGame, ActionType.StartGame], action.type)
 

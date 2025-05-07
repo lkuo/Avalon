@@ -1,7 +1,6 @@
 from typing import Optional
 
 from game_core.constants.vote_result import VoteResult
-from game_core.entities.action import Action
 from game_core.entities.quest import Quest
 from game_core.entities.quest_vote import QuestVote
 from game_core.repository import Repository
@@ -23,6 +22,24 @@ class QuestService:
         self._player_service = player_service
         self._repository = repository
 
+    def add_quest(self, game_id: str, quest_number: int) -> Quest:
+        return self._repository.put_quest(game_id, quest_number)
+
+    def get_quests(self, game_id: str) -> list[Quest]:
+        return self._repository.get_quests(game_id)
+
+    def get_last_quest(self, game_id: str) -> Optional[Quest]:
+        quests = self._repository.get_quests(game_id)
+        quests = sorted(quests, key=lambda q: q.quest_number)
+        return quests[-1] if quests else None
+
+    def create_quest(self, game_id: str) -> Quest:
+        current_quest = self.get_current_quest(game_id)
+        quest_number = 1 if not current_quest else current_quest.quest_number + 1
+        quest = self._repository.put_quest(game_id, quest_number)
+        self._event_service.create_quest_started_event(game_id, quest_number)
+        return quest
+
     def create_quest_vote(self, game_id: str, quest_number: int, player_id: str, is_approved: bool) -> QuestVote:
         return self._repository.put_quest_vote(game_id, quest_number, player_id, is_approved)
 
@@ -40,13 +57,6 @@ class QuestService:
         disapprove_votes = [qv for qv in quest_votes if not qv.result]
 
         return len(disapprove_votes) <= (0 if quest_number != 4 else 1)
-
-    def create_quest(self, game_id: str) -> Quest:
-        current_quest = self.get_current_quest(game_id)
-        quest_number = 1 if not current_quest else current_quest.quest_number + 1
-        quest = self._repository.put_quest(game_id, quest_number)
-        self._event_service.create_quest_started_event(game_id, quest_number)
-        return quest
 
     def get_current_quest(self, game_id: str) -> Optional[Quest]:
         quests = self._repository.get_quests(game_id)

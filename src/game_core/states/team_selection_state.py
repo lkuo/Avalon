@@ -35,7 +35,7 @@ class TeamSelectionState(State):
         game_round = self._round_service.get_current_round(game_id)
         team_size = game.quest_team_size[game_round.quest_number]
         if len(payload.team_member_ids) != team_size:
-            raise InvalidInputException("")
+            raise InvalidInputException(f"Expect {team_size}, got {len(payload.team_member_ids)}")
         players = self._player_service.get_players(game_id)
         player_ids = set([p.id for p in players])
         if any([tm_id not in player_ids for tm_id in payload.team_member_ids]):

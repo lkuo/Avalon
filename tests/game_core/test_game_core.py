@@ -124,6 +124,8 @@ def test_game_core(dynamodb_repository, comm_service, game, players):
     # Given
     def sm():
         return StateMachine(comm_service, dynamodb_repository, game.id)
+    game.assassination_attempts = 1
+    dynamodb_repository.update_game(game)
 
     # Start Game
     start_game_action = Action(
@@ -140,7 +142,7 @@ def test_game_core(dynamodb_repository, comm_service, game, players):
         event = comm_service.records[player.id].popleft()
         assert event.type == EventType.GameStarted, event
         role = Role(event.payload["role"])
-        role_to_players[role].append(player.id)
+        role_to_players[role].append(player)
 
     assert_quest_started_event(comm_service, players, 1)
     assert_round_started_event(comm_service, players, 1)
@@ -162,7 +164,7 @@ def test_game_core(dynamodb_repository, comm_service, game, players):
     vote_team_proposal(game.id, players[:3], players[3:], sm())
     assert_round_vote_cast_event(comm_service, players, 1, 1)
     player_votes = {p.id: VoteResult.Pass for p in players[:3]} | {p.id: VoteResult.Fail for p in players[3:]}
-    assert_round_completed_event(comm_service, players, 1, 1, player_votes)
+    assert_round_completed_event(comm_service, players, 1, 1, VoteResult.Fail, player_votes)
     assert_event(comm_service, players, EventType.RoundStarted)
 
     # Round 2
@@ -172,7 +174,7 @@ def test_game_core(dynamodb_repository, comm_service, game, players):
     assert_team_proposal_submitted_event(comm_service, players, players[1:4])
     vote_team_proposal(game.id, players, [], sm())
     assert_round_vote_cast_event(comm_service, players, 1, 2)
-    assert_event(comm_service, players, EventType.RoundCompleted)
+    assert_round_completed_event(comm_service, players, 1, 2, VoteResult.Pass, {p.id: VoteResult.Pass for p in players})
     assert_quest_vote_started_event(comm_service, players, 1)
     assert_quest_vote_requested_event(comm_service, players[1:4], 1)
 
@@ -193,6 +195,58 @@ def test_game_core(dynamodb_repository, comm_service, game, players):
     vote_quest(game.id, 2, players[1:5], [], sm())
     assert_quest_vote_cast_event(comm_service, players, players[1:5], 2)
     assert_quest_completed_event(comm_service, players, 2, VoteResult.Pass)
+
+    # Quest 3
+    # Round 1
+    round_number = 1
+    for leader in players[3:8]:
+        submit_team_proposal(game.id, leader, players[2:6], sm())
+        clear_comm_service(comm_service)
+        vote_team_proposal(game.id, [], players, sm())
+        assert_round_vote_cast_event(comm_service, players, 3, round_number)
+        assert_round_completed_event(comm_service, players, 3, round_number, VoteResult.Fail,
+                                     {p.id: VoteResult.Fail for p in players})
+        round_number += 1
+    assert_quest_completed_event(comm_service, players, 3, VoteResult.Fail)
+
+    # Quest 4
+    # Round 1
+    leader = players[8]
+    submit_team_proposal(game.id, leader, players[3:8], sm())
+    vote_team_proposal(game.id, players, [], sm())
+    clear_comm_service(comm_service)
+    vote_quest(game.id, 4, players[3:7], [players[7]], sm())
+    assert_quest_vote_cast_event(comm_service, players, players[3:8], 4)
+    assert_quest_completed_event(comm_service, players, 4, VoteResult.Pass)
+
+    # Assassination
+    assert_assassination_started_event(comm_service, players)
+    assassin = role_to_players[Role.Assassin][0]
+    merlin = role_to_players[Role.Merlin][0]
+    assert_event(comm_service, [assassin], EventType.AssassinationTargetRequested)
+    submit_assassination_target(game.id, assassin, merlin, sm())
+    assert_event(comm_service, players, EventType.AssassinationSucceeded)
+    assert_event(comm_service, players, EventType.GameEnded)
+    game = dynamodb_repository.get_game(game.id)
+    assert game.result == "Evil"
+
+
+def submit_assassination_target(game_id, assassin, target, sm):
+    action = Action(
+        id=uuid.uuid4().hex,
+        game_id=game_id,
+        player_id=assassin.id,
+        type=ActionType.SubmitAssassinationTarget,
+        payload={"target_id": target.id},
+    )
+    sm.handle_action(action)
+
+
+def assert_assassination_started_event(comm_service, players):
+    for p in players:
+        event = comm_service.records[p.id].popleft()
+        assert event.type == EventType.AssassinationStarted, event
+        assert event.payload["assassination_attempts"] == 0
 
 
 def assert_quest_completed_event(comm_service, players, quest_number, result):
@@ -225,13 +279,14 @@ def assert_quest_vote_requested_event(comm_service, team_members, quest_number):
         assert event.payload["quest_number"] == quest_number
 
 
-def assert_round_completed_event(comm_service, players, quest_number, round_number, player_votes):
+def assert_round_completed_event(comm_service, players, quest_number, round_number, result, player_votes):
     for p in players:
         event = comm_service.records[p.id].popleft()
         assert event.type == EventType.RoundCompleted, event
         assert event.payload["quest_number"] == quest_number
         assert event.payload["round_number"] == round_number
         assert event.payload["player_votes"] == {k: v.value for k, v in player_votes.items()}
+        assert event.payload["result"] == result.value
 
 
 def assert_event(comm_service, players, event_type):
@@ -294,6 +349,15 @@ def assert_quest_vote_cast_event(comm_service, players, team_members, quest_numb
             assert event.type == EventType.QuestVoteCast, event
             assert event.payload["player_id"] == m.id
             assert event.payload["quest_number"] == quest_number
+
+
+def assert_game_ended_event(comm_service, players, result):
+    player_roles = {p.id: p.role.value for p in players}
+    for p in players:
+        event = comm_service.records[p.id].popleft()
+        assert event.type == EventType.GameEnded, event
+        assert event.payload["result"] == result.value
+        assert event.payload["player_roles"] == player_roles
 
 
 def vote_quest(game_id, quest_number, approves, rejects, statemachine):

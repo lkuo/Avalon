@@ -10,6 +10,7 @@ from game_core.services.game_service import GameService
 from game_core.services.player_service import PlayerService
 from game_core.services.quest_service import QuestService
 from game_core.services.round_service import RoundService
+from game_core.services.state_service import StateService
 from game_core.states.end_game_state import EndGameState
 from game_core.states.game_setup_state import GameSetupState
 from game_core.states.quest_voting_state import QuestVotingState
@@ -28,12 +29,10 @@ class StateMachine:
         self._event_service = EventService(comm_service, repository)
         self._player_service = PlayerService(self._event_service, repository)
         self._round_service = RoundService(self._event_service, repository)
-        self._game_service = GameService(
-            self._player_service, self._event_service, repository
-        )
-        self._quest_service = QuestService(
-            self._round_service, self._event_service, self._player_service, repository
-        )
+        self._game_service = GameService(self._player_service, self._event_service, repository)
+        self._quest_service = QuestService(self._round_service, self._event_service, self._player_service, repository)
+        self._state_service = StateService(self._game_service, self._player_service, self._quest_service,
+                                           self._round_service, self._event_service)
         self._current_state = None
         self.state_name_map = {}
         self._setup_states()
@@ -42,9 +41,8 @@ class StateMachine:
         game = self._repository.get_game(self._game_id)
 
         game_setup_state = GameSetupState(
+            self._state_service,
             self._game_service,
-            self._quest_service,
-            self._round_service,
             self._player_service,
             self._event_service
         )
@@ -55,18 +53,21 @@ class StateMachine:
             self._event_service
         )
         round_voting_state = RoundVotingState(
+            self._state_service,
             self._game_service,
             self._quest_service,
             self._round_service,
             self._event_service
         )
         quest_voting_state = QuestVotingState(
+            self._state_service,
             self._game_service,
             self._player_service,
             self._quest_service,
             self._round_service,
             self._event_service)
-        end_game_state = EndGameState(self._game_service)
+        end_game_state = EndGameState(self._state_service, self._game_service, self._player_service,
+                                      self._event_service)
 
         self.state_name_map = {
             StateName.GameSetup: game_setup_state,

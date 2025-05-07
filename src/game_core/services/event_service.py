@@ -120,18 +120,19 @@ class EventService:
         payload = {
             "quest_number": quest_number,
             "round_number": round_number,
-            "player_votes": player_votes,
+            "player_votes": {k: v.value for k, v in player_votes.items()},
             "result": vote_result.value,
         }
         event = self._create_event(game_id, EventType.RoundCompleted, [], payload)
         self._comm_service.broadcast(event)
 
     def create_quest_completed_event(
-            self, game_id: str, quest_number: int, result: VoteResult
+            self, game_id: str, quest_number: int, result: VoteResult, num_failed_votes: int
     ) -> None:
         payload = {
             "quest_number": quest_number,
             "result": result.value,
+            "num_failed_votes": num_failed_votes
         }
         event = self._create_event(game_id, EventType.QuestCompleted, [], payload)
         self._comm_service.broadcast(event)
@@ -168,9 +169,12 @@ class EventService:
         self._comm_service.broadcast(event)
 
     def create_assassination_started_event(
-            self, game_id: str, assassination_attempts: int
+            self, game_id: str, assassination_attempts: int, assassin_id: str
     ) -> None:
-        payload = {"assassination_attempts": assassination_attempts}
+        payload = {
+            "assassination_attempts": assassination_attempts,
+            "assassin_id": assassin_id,
+        }
         event = self._create_event(game_id, EventType.AssassinationStarted, [], payload)
         self._comm_service.broadcast(event)
 
@@ -180,7 +184,7 @@ class EventService:
         event = self._create_event(
             game_id, EventType.AssassinationTargetRequested, [assassin_id], {}
         )
-        self._comm_service.broadcast(event)
+        self._comm_service.notify(assassin_id, event)
 
     def create_assassination_event(
             self, game_id: str, target_id: str, is_successful: bool

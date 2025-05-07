@@ -15,9 +15,20 @@ class RoundService:
         self._event_service = event_service
         self._repository = repository
 
-    def get_quest_rounds(self, game_id: str, quest_number: int) -> list[Round]:
+    def add_round(self, game_id: str, quest_number: int, round_number: int, leader_id: str) -> Round:
+        return self._repository.put_round(game_id, quest_number, round_number, leader_id)
+
+    def get_rounds_by_game(self, game_id: str) -> list[round]:
         rounds = self._repository.get_rounds(game_id)
+        return sorted(rounds, key=lambda r: (r.quest_number, r.round_number))
+
+    def get_rounds_by_quest(self, game_id: str, quest_number: int) -> list[Round]:
+        rounds = self.get_rounds_by_game(game_id)
         return [r for r in rounds if r.quest_number == quest_number]
+
+    def get_last_round(self, game_id: str) -> Round | None:
+        rounds = self.get_rounds_by_game(game_id)
+        return rounds[-1] if rounds else None
 
     def get_round_votes(self, game_id: str, quest_number: int, round_number: int) -> list[RoundVote]:
         return self._repository.get_round_votes(game_id, quest_number, round_number)

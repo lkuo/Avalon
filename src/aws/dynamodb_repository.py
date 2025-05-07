@@ -4,7 +4,6 @@ from typing import Any, Optional
 import boto3
 
 from game_core.constants.event_type import EventType
-from game_core.constants.game_status import GameStatus
 from game_core.constants.role import Role
 from game_core.constants.state_name import StateName
 from game_core.constants.vote_result import VoteResult
